@@ -143,18 +143,28 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getDatabase, ref, set, update, onValue, get, onDisconnect } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
+        // ==========================================
+        // CONFIGURACIÓN DE FIREBASE (ACTUALIZADA)
+        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyD5zPrdCB4GYZ6O0QORDNZA756YvAW7ztQ",
             authDomain: "labyrinth-lab-d81da.firebaseapp.com",
-            databaseURL: "https://labyrinth-lab-d81da-default-rtdb.firebaseio.com",
+            databaseURL: "https://labyrinth-lab-d81da-default-rtdb.firebaseio.com", // ¡AGREGADA MANUALMENTE!
             projectId: "labyrinth-lab-d81da",
             storageBucket: "labyrinth-lab-d81da.firebasestorage.app",
             messagingSenderId: "233198647806",
             appId: "1:233198647806:web:a5823d53d68a86730268af"
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
+        let db;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getDatabase(app);
+            console.log("✅ Firebase inicializado correctamente");
+        } catch (error) {
+            console.error("❌ Error al inicializar Firebase:", error);
+            alert("ERROR CRÍTICO: No se pudo conectar a Firebase. Revisa la consola (F12).");
+        }
 
         let playerId = localStorage.getItem('ll_playerId') || Math.random().toString(36).substr(2, 9);
         localStorage.setItem('ll_playerId', playerId);
@@ -173,7 +183,6 @@
         let localPlayer = { x: 0, z: 0, yaw: 0, pitch: 0, speed: 3.0, rotSpeed: 2.0, hasStick: false };
         let lastDbUpdate = 0;
 
-        // Variable global para las teclas
         window.gameKeys = { up: false, down: false, left: false, right: false };
 
         const lobbyScreen = document.getElementById('lobby-screen');
@@ -197,6 +206,8 @@
         });
 
         window.joinRoom = async () => {
+            if (!db) { alert("Firebase no se inicializó. Revisa la configuración."); return; }
+            
             try {
                 roomId = roomInput.value.trim().toUpperCase();
                 if (!roomId) { alert("Ingresa un código de sala"); return; }
@@ -205,9 +216,11 @@
                 document.getElementById('join-btn').disabled = true;
 
                 const roomRef = ref(db, `rooms/${roomId}`);
+                console.log("Intentando leer sala:", roomId);
                 const snapshot = await get(roomRef);
                 
                 if (!snapshot.exists()) {
+                    console.log("Sala no existe. Creando como ANFITRIÓN...");
                     isHost = true;
                     await set(roomRef, {
                         host: playerId,
@@ -217,12 +230,15 @@
                         gameStarted: false,
                         players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: true } }
                     });
+                    console.log("✅ Sala creada exitosamente");
                 } else {
+                    console.log("Sala existe. Uniéndose como INVITADO...");
                     isHost = false;
                     await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
                         color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: false
                     });
                     onDisconnect(ref(db, `rooms/${roomId}/players/${playerId}`)).remove();
+                    console.log("✅ Unido a la sala exitosamente");
                 }
                 
                 lobbyScreen.style.display = 'none';
@@ -244,8 +260,8 @@
                 initCanvas();
                 listenToRoom();
             } catch (error) {
-                console.error("Error al unirse:", error);
-                alert("ERROR DE CONEXIÓN: " + error.message + "\n\nVerifica que las Reglas de Firebase estén en 'true' y tengas conexión a internet.");
+                console.error("❌ Error al unirse:", error);
+                alert("ERROR DE CONEXIÓN:\n" + error.message + "\n\n1. Verifica que las Reglas de Firebase estén en 'true'.\n2. Verifica tu conexión a internet.");
                 lobbyStatus.textContent = "Error de conexión";
                 document.getElementById('join-btn').disabled = false;
             }
@@ -617,3 +633,4 @@
     </script>
 </body>
 </html>
+
