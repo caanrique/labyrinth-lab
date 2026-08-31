@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Labyrinth Lab 🎮</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            min-height: 100vh;
+            padding: 10px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { text-align: center; margin: 20px 0; font-size: 28px; }
+        h2 { text-align: center; margin: 15px 0; font-size: 20px; color: #4CAF50; }
+        .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; }
+        
+        .btn-row { text-align: center; margin: 10px 0; }
+        button {
+            padding: 10px 15px;
+            margin: 3px;
+            font-size: 14px;
+            border: 2px solid #333;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        button:active { transform: scale(0.95); }
+        
+        .marker-section {
+            text-align: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 243, 205, 0.1);
+            border-radius: 5px;
+        }
+        
+        #draw-canvas {
+            border: 2px solid #555;
+            background: white;
+            touch-action: none;
+            cursor: crosshair;
+            max-width: 100%;
+            display: block;
+            margin: 10px auto;
+        }
+        
+        .settings {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+        }
+        .settings h3 { margin-bottom: 10px; color: #4CAF50; }
+        .setting-row { margin: 10px 0; }
+        .setting-row label { display: block; margin-bottom: 5px; font-size: 14px; }
+        .setting-row input[type="range"] { width: 100%; }
+        .setting-row select { width: 100%; padding: 8px; font-size: 14px; background: #222; color: white; border: 1px solid #555; border-radius: 5px; }
+        
+        .generate-btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            display: block;
+            margin: 20px auto;
+            cursor: pointer;
+        }
+        
+        #status { text-align: center; margin: 10px 0; color: #aaa; font-weight: bold; }
+        #marker-status { margin-top: 5px; font-size: 12px; color: #aaa; }
+        
+        #game-container {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 9999;
+            background: #000;
+        }
+        
+        .game-btn {
+            position: absolute;
+            padding: 8px 15px;
+            font-size: 14px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            border: 1px solid white;
+            border-radius: 5px;
+            z-index: 10001;
+            cursor: pointer;
+        }
+        
+        #hud {
+            position: absolute;
+            top: 10px; left: 10px;
+            color: #0f0;
+            font-family: monospace;
+            font-size: 16px;
+            text-shadow: 1px 1px 3px #000;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        
+        #minimap {
+            position: absolute;
+            top: 90px; right: 10px;
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 5px;
+            background: rgba(0,0,0,0.7);
+            z-index: 10000;
+            display: none;
+        }
+        
+        #victory-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 10002;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .victory-content { text-align: center; }
+        .victory-content h1 { font-size: 48px; color: #4CAF50; }
+        .victory-content p { font-size: 24px; margin: 20px; }
+        .victory-content button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .dpad-btn {
+            position: absolute;
+            width: 60px; height: 60px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            border-radius: 10px;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        
+        #joystick-zone {
+            position: absolute;
+            bottom: 30px; right: 30px;
+            width: 180px; height: 180px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Labyrinth Lab</h1>
+        <p class="subtitle">Dibuja tu propio laberinto y explóralo en 3D</p>
+        
+        <h2>🖌️ Editor</h2>
+        
+        <div class="btn-row">
+            <button id="btn-fill-white" style="background: white; color: black;">⬜ Fondo blanco</button>
+            <button id="btn-fill-black" style="background: black; color: white;">⬛ Fondo negro</button>
+        </div>
+        
+        <div class="btn-row">
+            <button id="btn-draw-white" style="background: white; color: black;">✏️ Dibujar blanco</button>
+            <button id="btn-draw-black" style="background: black; color: white;">✏️ Dibujar negro</button>
+        </div>
+        
+        <div class="marker-section">
+            <label style="font-weight: bold;">📍 Marcadores:</label><br>
+            <button id="btn-place-start" style="background: #dc3545; color: white;">🚪 Colocar salida</button>
+            <button id="btn-place-goal" style="background: #28a745; color: white;">🎯 Colocar meta</button>
+            <div id="marker-status"></div>
+        </div>
+        
+        <canvas id="draw-canvas" width="420" height="420"></canvas>
+        
+        <div class="settings">
+            <h3>⚙️ Personalización</h3>
+            <div class="setting-row">
+                <label>🧱 Grosor: <span id="thickness-val">1.0x</span></label>
+                <input type="range" id="thickness-slider" min="0.5" max="2.0" step="0.1" value="1.0">
+            </div>
+            <div class="setting-row">
+                <label>📏 Altura: <span id="height-val">2.0m</span></label>
+                <input type="range" id="height-slider" min="1.0" max="4.0" step="0.5" value="2.0">
+            </div>
+            <div class="setting-row">
+                <label>🎨 Material:</label>
+                <select id="material-select">
+                    <option value="stone">🪨 Piedra</option>
+                    <option value="brick">🧱 Ladrillo</option>
+                    <option value="wood">🪵 Madera</option>
+                    <option value="metal">⚙️ Metal</option>
+                    <option value="crystal">💎 Cristal</option>
+                    <option value="moss">🌿 Musgo</option>
+                </select>
+            </div>
+            <div class="setting-row">
+                <label>💡 Luz ambiental: <span id="ambient-val">50%</span></label>
+                <input type="range" id="ambient-slider" min="0" max="100" step="5" value="50">
+            </div>
+            <div class="setting-row">
+                <label>🔦 Linterna: <span id="player-light-val">1.5</span></label>
+                <input type="range" id="player-light-slider" min="0" max="5" step="0.5" value="1.5">
+            </div>
+            <div class="setting-row">
+                <label>📡 Alcance: <span id="light-distance-val">15m</span></label>
+                <input type="range" id="light-distance-slider" min="5" max="50" step="5" value="15">
+            </div>
+            <div class="setting-row">
+                <label>🎨 Color del avatar:</label>
+                <select id="avatar-color">
+                    <option value="0xff0000">🔴 Rojo</option>
+                    <option value="0x0066ff">🔵 Azul</option>
+                    <option value="0x00ff00">🟢 Verde</option>
+                    <option value="0xffff00">🟡 Amarillo</option>
+                    <option value="0xff00ff">🟣 Púrpura</option>
+                    <option value="0xff8800">🟠 Naranja</option>
+                    <option value="0xffffff">⚪ Blanco</option>
+                </select>
+            </div>
+        </div>
+        
+        <button id="btn-generate" class="generate-btn">🎮 Generar 3D</button>
+        
+        <div id="status">✏️ Modo: dibujar negro (paredes)</div>
+    </div>
+    
+    <div id="game-container">
+        <button id="btn-exit" class="game-btn" style="top: 10px; right: 10px;">✖️ Salir</button>
+        <button id="btn-sound" class="game-btn" style="top: 10px; left: 50%; transform: translateX(-50%);">🔊 Sonido ON</button>
+        <button id="btn-map" class="game-btn" style="top: 50px; right: 10px;">🗺️ Mapa</button>
+        <div id="hud"><div id="timer">⏱️ 00:00</div></div>
+        <canvas id="minimap" width="150" height="150"></canvas>
+        <div id="victory-overlay">
+            <div class="victory-content">
+                <h1>🏆 ¡GANASTE!</h1>
+                <p id="final-time"></p>
+                <button id="btn-continue">Seguir explorando</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.10.1/dist/nipplejs.min.js"></script>
+    
+    <script>
+    (function() {
+        const GRID_SIZE = 21;
+        const CELL_PX = 20;
+        const canvas = document.getElementById('draw-canvas');
+        const ctx = canvas.getContext('2d');
+        const status = document.getElementById('status');
+        const markerStatus = document.getElementById('marker-status');
+        
+        let isDrawing = false;
+        let currentColor = 'black';
+        let grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0));
+        let startMarker = null;
+        let goalMarker = null;
+        let placingMode = null;
+        
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        function updateDrawButtons() {
+            const bw = document.getElementById('btn-draw-white');
+            const bb = document.getElementById('btn-draw-black');
+            const bs = document.getElementById('btn-place-start');
+            const bg = document.getElementById('btn-place-goal');
+            [bw, bb, bs, bg].forEach(b => b.style.boxShadow = 'none');
+            if (placingMode === 'start') bs.style.boxShadow = '0 0 0 3px #ffc107';
+            else if (placingMode === 'goal') bg.style.boxShadow = '0 0 0 3px #ffc107';
+            else if (currentColor === 'white') bw.style.boxShadow = '0 0 0 3px #4CAF50';
+            else bb.style.boxShadow = '0 0 0 3px #4CAF50';
+        }
+        updateDrawButtons();
+        
+        function updateMarkerStatus() {
+            const sText = startMarker ? `✅ Salida: (${startMarker.x}, ${startMarker.y})` : '❌ Salida no colocada';
+            const gText = goalMarker ? `✅ Meta: (${goalMarker.x}, ${goalMarker.y})` : '❌ Meta no colocada';
+            markerStatus.innerHTML = `${sText} | ${gText}`;
+        }
+        updateMarkerStatus();
+        
+        function drawMarkers() {
+            if (startMarker) {
+                ctx.fillStyle = '#dc3545';
+                ctx.beginPath();
+                ctx.arc(startMarker.x * CELL_PX + CELL_PX/2, startMarker.y * CELL_PX + CELL_PX/2, CELL_PX * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('S', startMarker.x * CELL_PX + CELL_PX/2, startMarker.y * CELL_PX + CELL_PX/2);
+            }
+            if (goalMarker) {
+                ctx.fillStyle = '#28a745';
+                ctx.beginPath();
+                const cx = goalMarker.x * CELL_PX + CELL_PX/2;
+                const cy = goalMarker.y * CELL_PX + CELL_PX/2;
+                for (let i = 0; i < 5; i++) {
+                    const angle = (i * 4 * Math.PI / 5) - Math.PI / 2;
+                    const r = CELL_PX * 0.4;
+                    const x = cx + r * Math.cos(angle);
+                    const y = cy + r * Math.sin(angle);
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+        
+        function redrawCanvas() {
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    ctx.fillStyle = grid[y][x] === 1 ? 'black' : 'white';
+                    ctx.fillRect(x * CELL_PX, y * CELL_PX, CELL_PX, CELL_PX);
+                }
+            }
+            drawMarkers();
+        }
+        
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const sx = canvas.width / rect.width;
+            const sy = canvas.height / rect.height;
+            const cx = e.touches ? e.touches[0].clientX : e.clientX;
+            const cy = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: (cx - rect.left) * sx, y: (cy - rect.top) * sy };
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            e.preventDefault();
+            const pos = getPos(e);
+            const gx = Math.floor(pos.x / CELL_PX);
+            const gy = Math.floor(pos.y / CELL_PX);
+            if (gx >= 0 && gx < GRID_SIZE && gy >= 0 && gy < GRID_SIZE) {
+                if (placingMode === 'start') {
+                    startMarker = {x: gx, y: gy};
+                    placingMode = null;
+                    updateDrawButtons();
+                    updateMarkerStatus();
+                    status.textContent = '✅ Salida colocada';
+                    redrawCanvas();
+                } else if (placingMode === 'goal') {
+                    goalMarker = {x: gx, y: gy};
+                    placingMode = null;
+                    updateDrawButtons();
+                    updateMarkerStatus();
+                    status.textContent = '✅ Meta colocada';
+                    redrawCanvas();
+                } else {
+                    grid[gy][gx] = currentColor === 'black' ? 1 : 0;
+                    redrawCanvas();
+                }
+            }
+        }
+        
+        canvas.addEventListener('mousedown', (e) => { isDrawing = true; draw(e); });
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', () => isDrawing = false);
+        canvas.addEventListener('mouseleave', () => isDrawing = false);
+        canvas.addEventListener('touchstart', (e) => { isDrawing = true; draw(e); });
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', () => isDrawing = false);
+        
+        document.getElementById('btn-fill-white').onclick = () => {
+            grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0));
+            startMarker = null; goalMarker = null;
+            updateMarkerStatus();
+            redrawCanvas();
+            status.textContent = '✅ Fondo blanco';
+        };
+        document.getElementById('btn-fill-black').onclick = () => {
+            grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(1));
+            startMarker = null; goalMarker = null;
+            updateMarkerStatus();
+            redrawCanvas();
+            status.textContent = '✅ Fondo negro';
+        };
+        document.getElementById('btn-draw-white').onclick = () => {
+            currentColor = 'white'; placingMode = null;
+            updateDrawButtons(); status.textContent = '✏️ Modo blanco';
+        };
+        document.getElementById('btn-draw-black').onclick = () => {
+            currentColor = 'black'; placingMode = null;
+            updateDrawButtons(); status.textContent = '✏️ Modo negro';
+        };
+        document.getElementById('btn-place-start').onclick = () => {
+            placingMode = 'start';
+            updateDrawButtons();
+            status.textContent = '🚪 Toca el canvas para colocar la SALIDA';
+        };
+        document.getElementById('btn-place-goal').onclick = () => {
+            placingMode = 'goal';
+            updateDrawButtons();
+            status.textContent = '🎯 Toca el canvas para colocar la META';
+        };
+        
+        ['thickness','height','ambient','player-light','light-distance'].forEach(id => {
+            const slider = document.getElementById(id + '-slider');
+            const val = document.getElementById(id + '-val');
+            if (slider && val) {
+                slider.oninput = () => {
+                    let v = slider.value;
+                    if (id === 'thickness') v += 'x';
+                    else if (id === 'height') v += 'm';
+                    else if (id === 'ambient') v += '%';
+                    else if (id === 'light-distance') v += 'm';
+                    val.textContent = v;
+                };
+            }
+        });
+        
+        class AudioEngine {
+            constructor() { this.ctx = null; this.muted = false; this.initialized = false; }
+            init() {
+                if (this.initialized) return;
+                try {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    this.masterGain = this.ctx.createGain();
+                    this.masterGain.gain.value = 0.3;
+                    this.masterGain.connect(this.ctx.destination);
+                    this.initialized = true;
+                    this.startAmbient();
+                } catch(e) {}
+            }
+            toggleMute() {
+                this.muted = !this.muted;
+                if (this.masterGain) this.masterGain.gain.value = this.muted ? 0 : 0.3;
+                return this.muted;
+            }
+            playStep() {
+                if (!this.initialized || this.muted) return;
+                const now = this.ctx.currentTime;
+                const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.08, this.ctx.sampleRate);
+                const data = buf.getChannelData(0);
+                for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (data.length * 0.15));
+                const src = this.ctx.createBufferSource(); src.buffer = buf;
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass'; filter.frequency.value = 800 + Math.random() * 400;
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                src.connect(filter); filter.connect(gain); gain.connect(this.masterGain);
+                src.start(now);
+            }
+            startAmbient() {
+                if (!this.initialized) return;
+                const osc = this.ctx.createOscillator();
+                osc.type = 'sine'; osc.frequency.value = 55;
+                const lfo = this.ctx.createOscillator(); lfo.frequency.value = 0.1;
+                const lfoGain = this.ctx.createGain(); lfoGain.gain.value = 10;
+                lfo.connect(lfoGain); lfoGain.connect(osc.frequency);
+                const gain = this.ctx.createGain(); gain.gain.value = 0.05;
+                osc.connect(gain); gain.connect(this.masterGain);
+                osc.start(); lfo.start();
+            }
+            playVictory() {
+                if (!this.initialized) return;
+                [523, 659, 784, 1047].forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    osc.type = 'sine'; osc.frequency.value = freq;
+                    const gain = this.ctx.createGain();
+                    const t = this.ctx.currentTime + i * 0.15;
+                    gain.gain.setValueAtTime(0, t);
+                    gain.gain.linearRampToValueAtTime(0.3, t + 0.05);
+                    gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+                    osc.connect(gain); gain.connect(this.masterGain);
+                    osc.start(t); osc.stop(t + 0.5);
+                });
+            }
+        }
+        const audio = new AudioEngine();
+        
+        class Avatar {
+            constructor(color) {
+                this.color = color;
+                this.group = new THREE.Group();
+                const headGeo = new THREE.SphereGeometry(0.3, 16, 16);
+                const headMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.5, metalness: 0.3 });
+                this.head = new THREE.Mesh(headGeo, headMat);
+                this.head.position.y = 1.2;
+                this.group.add(this.head);
+                const bodyGeo = new THREE.ConeGeometry(0.4, 1.0, 16);
+                const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.5, metalness: 0.3 });
+                this.body = new THREE.Mesh(bodyGeo, bodyMat);
+                this.body.position.y = 0.5;
+                this.body.rotation.x = Math.PI;
+                this.group.add(this.body);
+            }
+            setPosition(x, z) { this.group.position.set(x, 0, z); }
+            animate(time) { this.head.position.y = 1.2 + Math.sin(time * 0.01) * 0.05; }
+        }
+        
+        function generate3DGame(GRID, settings) {
+            const CELL = 1.0;
+            const WH = settings.height;
+            const WT = settings.thickness;
+            const gH = GRID.length;
+            const gW = GRID[0].length;
+            
+            const gc = document.getElementById('game-container');
+            gc.style.display = 'block';
+            
+            const gameCanvas = document.createElement('canvas');
+            gameCanvas.id = 'maze-canvas';
+            gameCanvas.style.cssText = 'width:100%;height:100%;display:block;';
+            gc.appendChild(gameCanvas);
+            
+            gc.insertAdjacentHTML('beforeend', '<div style="position:absolute;bottom:30px;left:30px;width:180px;height:180px;"><button class="dpad-btn" data-dir="up" style="top:0;left:60px;"><span>⬆️</span></button><button class="dpad-btn" data-dir="left" style="top:60px;left:0;"><span>⬅️</span></button><button class="dpad-btn" data-dir="right" style="top:60px;left:120px;"><span>➡️</span></button><button class="dpad-btn" data-dir="down" style="top:120px;left:60px;"><span>⬇️</span></button></div><div id="joystick-zone"></div>');
+            
+            document.getElementById('btn-exit').onclick = () => {
+                gc.style.display = 'none';
+                gameRunning = false;
+                const c = document.getElementById('maze-canvas');
+                if (c) c.remove();
+                const dpad = gc.querySelector('div[style*="bottom:30px;left:30px"]');
+                if (dpad) dpad.remove();
+                const jz = document.getElementById('joystick-zone');
+                if (jz) jz.remove();
+            };
+            
+            audio.init();
+            
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a2e);
+            scene.fog = new THREE.Fog(0x1a1a2e, 5, settings.lightDist);
+            
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+            const renderer = new THREE.WebGLRenderer({ canvas: gameCanvas, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            
+            const ambient = new THREE.AmbientLight(0x404040, settings.ambient);
+            scene.add(ambient);
+            const pLight = new THREE.PointLight(0xffffcc, settings.playerLight, settings.lightDist);
+            scene.add(pLight);
+            
+            const matConfigs = {
+                stone: { color: 0x808080, roughness: 0.9, metalness: 0.1 },
+                brick: { color: 0xb74d4d, roughness: 0.8, metalness: 0.0 },
+                wood: { color: 0x8b6f47, roughness: 0.7, metalness: 0.0 },
+                metal: { color: 0xc0c0c0, roughness: 0.3, metalness: 0.8 },
+                crystal: { color: 0x4d9fff, roughness: 0.2, metalness: 0.5, emissive: 0x1a4d80 },
+                moss: { color: 0x4a6b4a, roughness: 0.9, metalness: 0.0 }
+            };
+            
+            const wallMat = new THREE.MeshStandardMaterial(matConfigs[settings.material]);
+            const wc = GRID.flat().filter(c => c === 1).length;
+            const wallGeo = new THREE.BoxGeometry(CELL * WT, WH, CELL * WT);
+            const walls = new THREE.InstancedMesh(wallGeo, wallMat, wc);
+            const dummy = new THREE.Object3D();
+            let idx = 0;
+            for (let y = 0; y < gH; y++) {
+                for (let x = 0; x < gW; x++) {
+                    if (GRID[y][x] === 1) {
+                        dummy.position.set(x * CELL, WH / 2, y * CELL);
+                        dummy.updateMatrix();
+                        walls.setMatrixAt(idx++, dummy.matrix);
+                    }
+                }
+            }
+            scene.add(walls);
+            
+            const floorGeo = new THREE.PlaneGeometry(gW * CELL, gH * CELL);
+            const floor = new THREE.Mesh(floorGeo, new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 1 }));
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.set((gW * CELL) / 2 - CELL/2, 0, (gH * CELL) / 2 - CELL/2);
+            scene.add(floor);
+            
+            const goalX = settings.goal.x;
+            const goalZ = settings.goal.y;
+            const goalGeo = new THREE.SphereGeometry(0.3, 16, 16);
+            const goalMat = new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 2 });
+            const goalMesh = new THREE.Mesh(goalGeo, goalMat);
+            goalMesh.position.set(goalX * CELL, 0.5, goalZ * CELL);
+            scene.add(goalMesh);
+            const goalLight = new THREE.PointLight(0x00ff00, 1, 5);
+            goalLight.position.set(goalX * CELL, 1, goalZ * CELL);
+            scene.add(goalLight);
+            
+            const startX = settings.start.x;
+            const startZ = settings.start.y;
+            const playerAvatar = new Avatar(settings.avatarColor);
+            playerAvatar.setPosition(startX * CELL, startZ * CELL);
+            scene.add(playerAvatar.group);
+            
+            const player = { x: startX * CELL, z: startZ * CELL, yaw: 0, pitch: 0, speed: 3.0, rotSpeed: 2.0 };
+            camera.position.set(player.x, 1.5, player.z);
+            
+            const keys = { up: false, down: false, left: false, right: false };
+            document.querySelectorAll('.dpad-btn').forEach(btn => {
+                const dir = btn.dataset.dir;
+                btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[dir] = true; });
+                btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[dir] = false; });
+                btn.addEventListener('mousedown', () => keys[dir] = true);
+                btn.addEventListener('mouseup', () => keys[dir] = false);
+            });
+            
+            const joystick = nipplejs.create({ zone: document.getElementById('joystick-zone'), mode: 'dynamic', size: 120 });
+            let jv = { x: 0, y: 0 };
+            joystick.on('move', (evt, data) => { if (data.vector) { jv.x = data.vector.x; jv.y = data.vector.y; } });
+            joystick.on('end', () => { jv.x = 0; jv.y = 0; });
+            
+            function canMove(x, z) {
+                const gx = Math.round(x / CELL), gz = Math.round(z / CELL);
+                if (gx < 0 || gx >= gW || gz < 0 || gz >= gH) return false;
+                return GRID[gz][gx] === 0;
+            }
+            
+            let gameRunning = true;
+            let gameWon = false;
+            let startTime = performance.now();
+            let elapsed = 0;
+            const timerEl = document.getElementById('timer');
+            
+            function updateTimer() {
+                if (!gameRunning || gameWon) return;
+                elapsed = (performance.now() - startTime) / 1000;
+                const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                const s = Math.floor(elapsed % 60).toString().padStart(2, '0');
+                timerEl.textContent = '⏱️ ' + m + ':' + s;
+            }
+            
+            const minimapCanvas = document.getElementById('minimap');
+            const mctx = minimapCanvas.getContext('2d');
+            const mapSize = 150;
+            const cellPx = mapSize / Math.max(gW, gH);
+            let mapVisible = false;
+            
+            document.getElementById('btn-map').onclick = () => {
+                mapVisible = !mapVisible;
+                minimapCanvas.style.display = mapVisible ? 'block' : 'none';
+                document.getElementById('btn-map').textContent = mapVisible ? '🗺️ Ocultar' : '🗺️ Mapa';
+            };
+            
+            document.getElementById('btn-sound').onclick = () => {
+                const muted = audio.toggleMute();
+                document.getElementById('btn-sound').textContent = muted ? '🔇 Sonido OFF' : '🔊 Sonido ON';
+            };
+            
+            function drawMinimap() {
+                if (!mapVisible) return;
+                mctx.fillStyle = '#111';
+                mctx.fillRect(0, 0, mapSize, mapSize);
+                for (let y = 0; y < gH; y++) {
+                    for (let x = 0; x < gW; x++) {
+                        if (GRID[y][x] === 1) {
+                            mctx.fillStyle = '#666';
+                            mctx.fillRect(x * cellPx, y * cellPx, cellPx, cellPx);
+                        }
+                    }
+                }
+                mctx.fillStyle = '#0f0';
+                mctx.beginPath();
+                mctx.arc(goalX * cellPx + cellPx/2, goalZ * cellPx + cellPx/2, cellPx * 0.8, 0, Math.PI * 2);
+                mctx.fill();
+                mctx.fillStyle = '#f00';
+                mctx.beginPath();
+                mctx.arc(startX * cellPx + cellPx/2, startZ * cellPx + cellPx/2, cellPx * 0.6, 0, Math.PI * 2);
+                mctx.fill();
+                mctx.fillStyle = '#ff0';
+                mctx.beginPath();
+                mctx.arc((player.x / CELL) * cellPx + cellPx/2, (player.z / CELL) * cellPx + cellPx/2, cellPx * 0.6, 0, Math.PI * 2);
+                mctx.fill();
+            }
+            
+            let lastTime = performance.now();
+            let stepCooldown = 0;
+            
+            function animate() {
+                if (!gameRunning) return;
+                requestAnimationFrame(animate);
+                const now = performance.now();
+                const dt = (now - lastTime) / 1000;
+                lastTime = now;
+                updateTimer();
+                
+                const pulse = 1 + Math.sin(now * 0.005) * 0.2;
+                goalMesh.scale.set(pulse, pulse, pulse);
+                goalMat.emissiveIntensity = 1.5 + Math.sin(now * 0.003) * 0.5;
+                
+                if (!gameWon) {
+                    player.yaw -= jv.x * player.rotSpeed * dt;
+                    player.pitch -= jv.y * player.rotSpeed * dt;
+                    player.pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, player.pitch));
+                    
+                    const fwd = { x: -Math.sin(player.yaw), z: -Math.cos(player.yaw) };
+                    const rgt = { x: Math.cos(player.yaw), z: -Math.sin(player.yaw) };
+                    let mx = 0, mz = 0;
+                    if (keys.up) { mx += fwd.x; mz += fwd.z; }
+                    if (keys.down) { mx -= fwd.x; mz -= fwd.z; }
+                    if (keys.left) { mx -= rgt.x; mz -= rgt.z; }
+                    if (keys.right) { mx += rgt.x; mz += rgt.z; }
+                    
+                    const len = Math.sqrt(mx*mx + mz*mz);
+                    let isMoving = false;
+                    if (len > 0) {
+                        mx = (mx / len) * player.speed * dt;
+                        mz = (mz / len) * player.speed * dt;
+                        isMoving = true;
+                    }
+                    
+                    const margin = 0.3;
+                    if (canMove(player.x + mx + Math.sign(mx)*margin, player.z)) player.x += mx;
+                    if (canMove(player.x, player.z + mz + Math.sign(mz)*margin)) player.z += mz;
+                    
+                    playerAvatar.setPosition(player.x, player.z);
+                    playerAvatar.group.rotation.y = player.yaw;
+                    playerAvatar.animate(now);
+                    
+                    if (isMoving) {
+                        stepCooldown -= dt;
+                        if (stepCooldown <= 0) { audio.playStep(); stepCooldown = 0.35; }
+                    } else stepCooldown = 0;
+                    
+                    const dx = player.x - goalX * CELL;
+                    const dz = player.z - goalZ * CELL;
+                    if (Math.sqrt(dx*dx + dz*dz) < 0.6) {
+                        gameWon = true;
+                        audio.playVictory();
+                        const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                        const s = Math.floor(elapsed % 60).toString().padStart(2, '0');
+                        document.getElementById('final-time').textContent = 'Tiempo: ' + m + ':' + s;
+                        document.getElementById('victory-overlay').style.display = 'flex';
+                        document.getElementById('btn-continue').onclick = () => {
+                            document.getElementById('victory-overlay').style.display = 'none';
+                            gameWon = false;
+                            player.x = startX * CELL;
+                            player.z = startZ * CELL;
+                            playerAvatar.setPosition(player.x, player.z);
+                            startTime = performance.now();
+                        };
+                    }
+                }
+                
+                camera.position.set(player.x, 1.5, player.z);
+                camera.rotation.order = 'YXZ';
+                camera.rotation.y = player.yaw;
+                camera.rotation.x = player.pitch;
+                pLight.position.set(player.x, 1.5, player.z);
+                drawMinimap();
+                renderer.render(scene, camera);
+            }
+            animate();
+            
+            function onResize() {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+            window.addEventListener('resize', onResize);
+            window.addEventListener('orientationchange', () => setTimeout(onResize, 100));
+            
+            status.textContent = '✅ ¡Juego generado! Llega a la esfera verde 🟢';
+        }
+        
+        document.getElementById('btn-generate').onclick = () => {
+            if (!startMarker || !goalMarker) {
+                status.textContent = '⚠️ Coloca la salida y la meta antes de generar';
+                return;
+            }
+            for (let i = 0; i < GRID_SIZE; i++) {
+                grid[0][i] = 1; grid[GRID_SIZE-1][i] = 1;
+                grid[i][0] = 1; grid[i][GRID_SIZE-1] = 1;
+            }
+            grid[startMarker.y][startMarker.x] = 0;
+            grid[goalMarker.y][goalMarker.x] = 0;
+            
+            const settings = {
+                thickness: parseFloat(document.getElementById('thickness-slider').value),
+                height: parseFloat(document.getElementById('height-slider').value),
+                material: document.getElementById('material-select').value,
+                ambient: parseInt(document.getElementById('ambient-slider').value) / 100,
+                playerLight: parseFloat(document.getElementById('player-light-slider').value),
+                lightDist: parseInt(document.getElementById('light-distance-slider').value),
+                avatarColor: parseInt(document.getElementById('avatar-color').value),
+                start: startMarker,
+                goal: goalMarker
+            };
+            status.textContent = '🎮 Generando...';
+            generate3DGame(grid, settings);
+        };
+    })();
+    </script>
+</body>
+</html>
