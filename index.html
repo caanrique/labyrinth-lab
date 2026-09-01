@@ -43,7 +43,6 @@
         .dpad-btn { position: absolute; width: 60px; height: 60px; background: rgba(255,255,255,0.2); border: 2px solid white; border-radius: 10px; color: white; font-size: 24px; cursor: pointer; user-select: none; touch-action: manipulation; z-index: 10001; }
         .dpad-btn:active { background: rgba(255,255,255,0.5); }
         
-        /* Controles elevados */
         #joystick-zone { position: absolute; bottom: 80px; right: 30px; width: 180px; height: 180px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); z-index: 10001; }
         
         #tag-btn {
@@ -80,7 +79,6 @@
         <div id="lobby-screen">
             <h2>🚪 Sala de Espera</h2>
             
-            <!-- MEJORA 2: Grupo de input y botón de copiar -->
             <div class="input-group">
                 <input type="text" id="room-input" class="lobby-input" placeholder="Código (ej: LAB-123)" maxlength="10">
                 <button class="lobby-btn" onclick="copyRoomCode()" id="copy-btn" style="background: #0066ff; margin: 0; padding: 12px 15px;">📋</button>
@@ -108,7 +106,6 @@
             <p id="host-instruction" style="text-align: center; color: #4CAF50; font-weight: bold; display: none;">👑 Eres el ANFITRIÓN. Dibuja el laberinto y coloca la META.</p>
             <p id="guest-instruction" style="text-align: center; color: #0066ff; font-weight: bold; display: none;">👥 Eres INVITADO. Espera a que el anfitrión genere el juego.</p>
             
-            <!-- MEJORA 1: Casilla de batalla movida aquí, solo visible para el anfitrión -->
             <div id="host-battle-section" class="battle-checkbox" style="display: none;">
                 <input type="checkbox" id="battle-mode-game">
                 <label for="battle-mode-game">⚔️ Activar Modo Todos contra Todos<br><small style="color: #aaa; font-weight: normal;">(Todos tendrán palo para taggear al iniciar)</small></label>
@@ -149,9 +146,10 @@
                 <div class="setting-row"><label>🧱 Grosor: <span id="thickness-val">1.0x</span></label><input type="range" id="thickness-slider" min="0.5" max="2.0" step="0.1" value="1.0"></div>
                 <div class="setting-row"><label>📏 Altura: <span id="height-val">2.0m</span></label><input type="range" id="height-slider" min="1.0" max="4.0" step="0.5" value="2.0"></div>
                 <div class="setting-row"><label>🎨 Material:</label><select id="material-select"><option value="stone">🪨 Piedra</option><option value="brick">🧱 Ladrillo</option><option value="wood">🪵 Madera</option><option value="metal">⚙️ Metal</option><option value="crystal">💎 Cristal</option><option value="moss">🌿 Musgo</option><option value="lava">🌋 Lava</option><option value="snow">❄️ Nieve</option></select></div>
-                <div class="setting-row"><label>💡 Luz ambiental: <span id="ambient-val">80%</span></label><input type="range" id="ambient-slider" min="0" max="100" step="5" value="80"></div>
-                <div class="setting-row"><label>🔦 Linterna: <span id="player-light-val">2.5</span></label><input type="range" id="player-light-slider" min="0" max="5" step="0.5" value="2.5"></div>
-                <div class="setting-row"><label>📡 Alcance: <span id="light-distance-val">25m</span></label><input type="range" id="light-distance-slider" min="5" max="50" step="5" value="25"></div>
+                <!-- CORRECCIÓN 3: Rango de luz aumentado significativamente -->
+                <div class="setting-row"><label>💡 Luz ambiental: <span id="ambient-val">150%</span></label><input type="range" id="ambient-slider" min="0" max="300" step="10" value="150"></div>
+                <div class="setting-row"><label>🔦 Linterna: <span id="player-light-val">5.0</span></label><input type="range" id="player-light-slider" min="0" max="10" step="0.5" value="5.0"></div>
+                <div class="setting-row"><label>📡 Alcance: <span id="light-distance-val">50m</span></label><input type="range" id="light-distance-slider" min="10" max="100" step="5" value="50"></div>
             </div>
             
             <p id="players-ready-status" style="margin: 15px 0; color: #4CAF50; font-weight: bold; text-align: center;"></p>
@@ -262,6 +260,12 @@
                 gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
                 osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'hit') {
+                // CORRECCIÓN 1: Sonido para cuando recibes un ataque
+                osc.type = 'square'; osc.frequency.value = 120;
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.4);
             }
         }
 
@@ -292,6 +296,9 @@
         let mapVisible = false;
         let battleRoyaleMode = false;
         let colorSelectedInRoom = false;
+        
+        // CORRECCIÓN 1: Variables para controlar el respawn tras ataque
+        let respawnCooldown = 0; // Tiempo restante en el que no se envía posición
 
         window.gameKeys = { up: false, down: false, left: false, right: false };
 
@@ -304,7 +311,6 @@
             roomInput.value = "LAB-" + Math.random().toString(36).substr(2, 4).toUpperCase(); 
         };
 
-        // MEJORA 2: Función para copiar el código al portapapeles
         window.copyRoomCode = async () => {
             if (!roomInput.value) {
                 alert("Primero genera o escribe un código de sala.");
@@ -313,7 +319,6 @@
             try {
                 await navigator.clipboard.writeText(roomInput.value);
                 const btn = document.getElementById('copy-btn');
-                const originalText = btn.innerHTML;
                 btn.innerHTML = "✅";
                 setTimeout(() => { btn.innerHTML = "📋"; }, 2000);
             } catch (err) {
@@ -365,10 +370,10 @@
                     await set(roomRef, {
                         host: playerId, 
                         maxPlayers: maxPlayers,
-                        battleRoyale: false, // Se actualizará al generar si el anfitrión lo marca
+                        battleRoyale: false,
                         grid: grid, 
                         goal: null,
-                        settings: { thickness: 1.0, height: 2.0, material: 'stone', ambient: 0.8, playerLight: 2.5, lightDist: 25 },
+                        settings: { thickness: 1.0, height: 2.0, material: 'stone', ambient: 1.5, playerLight: 5.0, lightDist: 50 },
                         gameStarted: false,
                         players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: true, ready: false } }
                     });
@@ -402,7 +407,6 @@
                 }
                 
                 if (isHost) {
-                    // MEJORA 1: Mostrar la casilla de batalla solo al anfitrión
                     document.getElementById('host-battle-section').style.display = 'flex';
                     
                     document.getElementById('host-instruction').style.display = 'block';
@@ -455,7 +459,16 @@
                         const fbX = players[playerId].x;
                         const fbZ = players[playerId].z;
                         const diff = Math.abs(localPlayer.x - fbX) + Math.abs(localPlayer.z - fbZ);
-                        if (diff > 0.5) {
+                        
+                        // CORRECCIÓN 1: Si la diferencia es grande, es un respawn/teletransporte
+                        if (diff > 2.0) {
+                            console.log(`🔄 Respawn detectado: (${localPlayer.x.toFixed(1)},${localPlayer.z.toFixed(1)}) → (${fbX.toFixed(1)},${fbZ.toFixed(1)})`);
+                            localPlayer.x = fbX;
+                            localPlayer.z = fbZ;
+                            // Pausar sincronización de salida para evitar race condition
+                            respawnCooldown = 0.5; // 500ms de gracia
+                            playSound('hit');
+                        } else if (diff > 0.5) {
                             localPlayer.x = fbX;
                             localPlayer.z = fbZ;
                         }
@@ -521,6 +534,9 @@
 
         function syncPlayerPosition() {
             if (!gameStarted || gameWon) return;
+            // CORRECCIÓN 1: No enviar posición durante el cooldown de respawn
+            if (respawnCooldown > 0) return;
+            
             const now = Date.now();
             if (now - lastDbUpdate > 100) {
                 update(ref(db, `rooms/${roomId}/players/${playerId}`), { x: localPlayer.x, z: localPlayer.z });
@@ -666,7 +682,6 @@
         async function generateGame() {
             if (!goal) { alert("El anfitrión debe colocar la meta"); return; }
             
-            // MEJORA 1: Leer el estado de la casilla de batalla desde la pantalla de juego
             const battleMode = document.getElementById('battle-mode-game').checked;
             
             const roomSnapshot = await get(ref(db, `rooms/${roomId}`));
@@ -721,7 +736,7 @@
                 goal: goal, 
                 settings: settings, 
                 gameStarted: true,
-                battleRoyale: battleMode // Actualizar el modo batalla justo antes de generar
+                battleRoyale: battleMode
             };
             
             playerIds.forEach((pid, idx) => {
@@ -765,16 +780,23 @@
             gc.insertAdjacentHTML('beforeend', '<div style="position:absolute;bottom:80px;left:30px;width:180px;height:180px;"><button class="dpad-btn" data-dir="up" style="top:0;left:60px;">⬆️</button><button class="dpad-btn" data-dir="left" style="top:60px;left:0;">⬅️</button><button class="dpad-btn" data-dir="right" style="top:60px;left:120px;">➡️</button><button class="dpad-btn" data-dir="down" style="top:120px;left:60px;">⬇️</button></div><div id="joystick-zone"></div>');
 
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x1a1a2e);
-            scene.fog = new THREE.Fog(0x1a1a2e, 5, settings.lightDist);
+            // CORRECCIÓN 3: Fondo más claro para que no se vea tan oscuro
+            scene.background = new THREE.Color(0x2a2a4e);
+            // CORRECCIÓN 3: Niebla mucho más lejana para mejor visibilidad
+            scene.fog = new THREE.Fog(0x2a2a4e, 10, settings.lightDist * 1.5);
             
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
             renderer = new THREE.WebGLRenderer({ canvas: gameCanvas, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             
-            scene.add(new THREE.AmbientLight(0x404040, settings.ambient));
-            scene.add(new THREE.PointLight(0xffffcc, settings.playerLight, settings.lightDist));
+            // CORRECCIÓN 3: Luz ambiental con color base más brillante (0xaaaaaa en vez de 0x404040)
+            scene.add(new THREE.AmbientLight(0xaaaaaa, settings.ambient));
+            // CORRECCIÓN 3: Luz del jugador más potente y con mayor alcance
+            const playerLight = new THREE.PointLight(0xffffcc, settings.playerLight, settings.lightDist * 1.5);
+            playerLight.position.set(0, 1.5, 0);
+            scene.add(playerLight);
+            window._playerLight = playerLight; // Guardar referencia para actualizarla en cada frame
             
             const matConfigs = {
                 stone: { color: 0x808080, roughness: 0.9 }, brick: { color: 0xb74d4d, roughness: 0.8 },
@@ -799,7 +821,8 @@
             }
             scene.add(walls);
             
-            const floor = new THREE.Mesh(new THREE.PlaneGeometry(21, 21), new THREE.MeshStandardMaterial({ color: 0x3a3a3a }));
+            // CORRECCIÓN 3: Piso un poco más claro para mejor contraste
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(21, 21), new THREE.MeshStandardMaterial({ color: 0x555555 }));
             floor.rotation.x = -Math.PI / 2; floor.position.set(10, 0, 10);
             scene.add(floor);
             
@@ -807,7 +830,7 @@
                 const goalMesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 2 }));
                 goalMesh.position.set(currentGoal.x, 0.5, currentGoal.y);
                 scene.add(goalMesh);
-                const goalLight = new THREE.PointLight(0x00ff00, 1, 5);
+                const goalLight = new THREE.PointLight(0x00ff00, 1.5, 8);
                 goalLight.position.set(currentGoal.x, 1, currentGoal.y);
                 scene.add(goalLight);
             }
@@ -865,10 +888,18 @@
                 });
                 if (targetId) {
                     const target = players[targetId];
+                    // CORRECCIÓN 1: Siempre enviar a la posición inicial (startX/startZ)
                     if (battleRoyaleMode) {
-                        update(ref(db, `rooms/${roomId}/players/${targetId}`), { x: target.startX, z: target.startZ });
+                        update(ref(db, `rooms/${roomId}/players/${targetId}`), { 
+                            x: target.startX, 
+                            z: target.startZ 
+                        });
                     } else {
-                        update(ref(db, `rooms/${roomId}/players/${targetId}`), { x: target.startX, z: target.startZ, hasStick: false });
+                        update(ref(db, `rooms/${roomId}/players/${targetId}`), { 
+                            x: target.startX, 
+                            z: target.startZ, 
+                            hasStick: false 
+                        });
                     }
                     playSound('tag');
                 }
@@ -925,6 +956,10 @@
                     camera.rotation.order = 'YXZ';
                     camera.rotation.y = localPlayer.yaw;
                     camera.rotation.x = localPlayer.pitch;
+                    // CORRECCIÓN 3: Actualizar posición de la luz del jugador
+                    if (window._playerLight) {
+                        window._playerLight.position.set(localPlayer.x, 1.5, localPlayer.z);
+                    }
                 }
             });
             Object.keys(playerAvatars).forEach(pid => {
@@ -1005,6 +1040,9 @@
             const dt = (now - (window.lastTime || now)) / 1000;
             window.lastTime = now;
             
+            // CORRECCIÓN 1: Reducir cooldown de respawn
+            if (respawnCooldown > 0) respawnCooldown -= dt;
+            
             const elapsed = (now - startTime) / 1000;
             const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
             const s = Math.floor(elapsed % 60).toString().padStart(2, '0');
@@ -1019,8 +1057,11 @@
             if (window.gameKeys.left) { moveX -= rgt.x; moveZ -= rgt.z; }
             if (window.gameKeys.right) { moveX += rgt.x; moveZ += rgt.z; }
 
+            // CORRECCIÓN 2: Eje vertical del joystick invertido
+            // Joystick arriba (y>0) → mirar arriba (pitch negativo)
+            // Joystick abajo (y<0) → mirar abajo (pitch positivo)
             if (Math.abs(joystickVector.y) > 0.1) {
-                localPlayer.pitch -= joystickVector.y * localPlayer.rotSpeed * dt;
+                localPlayer.pitch += joystickVector.y * localPlayer.rotSpeed * dt;
                 localPlayer.pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, localPlayer.pitch));
             }
             if (Math.abs(joystickVector.x) > 0.1) {
