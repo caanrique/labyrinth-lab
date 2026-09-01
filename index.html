@@ -545,19 +545,32 @@
             };
             
             const playerIds = Object.keys(roomData.players);
-            const updatedPlayers = {};
+            
+            // Verificar que todos los jugadores estén presentes
+            if (playerIds.length < maxPlayers) {
+                alert(`⚠️ Faltan jugadores. Se necesitan ${maxPlayers} pero solo hay ${playerIds.length}. Espera a que todos se unan.`);
+                return;
+            }
+            
+            // Usar rutas anidadas para NO sobrescribir el nodo players completo
+            const updates = {
+                grid: currentGrid, 
+                goal: goal, 
+                settings: settings, 
+                gameStarted: true
+            };
+            
             playerIds.forEach((pid, idx) => {
                 const pos = startPositions[idx] || startPositions[0];
-                updatedPlayers[pid] = {
-                    ...roomData.players[pid],
-                    startX: pos.x, startZ: pos.y, x: pos.x, z: pos.y
-                };
+                updates[`players/${pid}/startX`] = pos.x;
+                updates[`players/${pid}/startZ`] = pos.y;
+                updates[`players/${pid}/x`] = pos.x;
+                updates[`players/${pid}/z`] = pos.y;
             });
             
-            update(ref(db, `rooms/${roomId}`), { 
-                grid: currentGrid, goal: goal, settings: settings, 
-                players: updatedPlayers, gameStarted: true 
-            });
+            console.log(`🚀 Generando para ${playerIds.length} jugadores`);
+            update(ref(db, `rooms/${roomId}`), updates);
+
         };
 
         let scene, camera, renderer, playerAvatars = {};
