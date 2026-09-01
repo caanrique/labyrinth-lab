@@ -44,8 +44,9 @@
         .victory-content h1 { font-size: 48px; color: #4CAF50; }
         .victory-content p { font-size: 24px; margin: 20px; }
         .victory-content button { padding: 15px 30px; font-size: 18px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        .dpad-btn { position: absolute; width: 60px; height: 60px; background: rgba(255,255,255,0.2); border: 2px solid white; border-radius: 10px; color: white; font-size: 24px; cursor: pointer; user-select: none; touch-action: manipulation; }
-        #joystick-zone { position: absolute; bottom: 30px; right: 30px; width: 180px; height: 180px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); }
+        .dpad-btn { position: absolute; width: 60px; height: 60px; background: rgba(255,255,255,0.2); border: 2px solid white; border-radius: 10px; color: white; font-size: 24px; cursor: pointer; user-select: none; touch-action: manipulation; z-index: 10001; }
+        .dpad-btn:active { background: rgba(255,255,255,0.5); }
+        #joystick-zone { position: absolute; bottom: 30px; right: 30px; width: 180px; height: 180px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); z-index: 10001; }
         
         #tag-btn {
             display: none; position: absolute; bottom: 220px; right: 30px;
@@ -102,9 +103,7 @@
             <p id="host-instruction" style="text-align: center; color: #4CAF50; font-weight: bold; display: none;">👑 Eres el ANFITRIÓN. Dibuja el laberinto y coloca la META.</p>
             <p id="guest-instruction" style="text-align: center; color: #0066ff; font-weight: bold; display: none;">👥 Eres INVITADO. Espera a que el anfitrión genere el juego.</p>
             
-            <!-- Botón de listo para el anfitrión -->
             <button id="btn-host-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 15px auto; background: #28a745; display: none;">✅ Estoy listo para generar</button>
-            <!-- Botón de listo para el invitado -->
             <button id="btn-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 15px auto; background: #28a745; display: none;">✅ Listo para jugar</button>
             
             <p id="players-ready-status" style="margin-top: 15px; color: #4CAF50; font-weight: bold; text-align: center;"></p>
@@ -377,7 +376,6 @@
                     }
                 }
                 
-                // Sincronizar UI de "Listo" en tiempo real
                 if (!gameStarted) {
                     const totalPlayers = Object.keys(players).length;
                     const readyCount = Object.values(players).filter(p => p.ready === true).length;
@@ -386,7 +384,6 @@
                         statusEl.textContent = `👥 Jugadores listos: ${readyCount}/${totalPlayers}`;
                     }
                     
-                    // Sincronizar estado del botón del anfitrión
                     if (isHost) {
                         const hostReady = players[playerId] && players[playerId].ready === true;
                         const btnHostReady = document.getElementById('btn-host-ready');
@@ -414,7 +411,6 @@
                         }
                     }
                     
-                    // Sincronizar estado del botón del invitado
                     if (!isHost) {
                         const guestReady = players[playerId] && players[playerId].ready === true;
                         const btnReady = document.getElementById('btn-ready');
@@ -713,12 +709,27 @@
             
             camera.position.set(localPlayer.x, 1.5, localPlayer.z);
             
+            // CORRECCIÓN DEL D-PAD: Eventos robustos con passive: false y touchcancel
             document.querySelectorAll('.dpad-btn').forEach(btn => {
                 const dir = btn.dataset.dir;
-                btn.addEventListener('touchstart', (e) => { e.preventDefault(); window.gameKeys[dir] = true; });
-                btn.addEventListener('touchend', (e) => { e.preventDefault(); window.gameKeys[dir] = false; });
-                btn.addEventListener('mousedown', () => window.gameKeys[dir] = true);
-                btn.addEventListener('mouseup', () => window.gameKeys[dir] = false);
+                
+                const startMove = (e) => {
+                    if (e.cancelable) e.preventDefault();
+                    window.gameKeys[dir] = true;
+                    console.log(`⬆️ D-pad ${dir} ACTIVADO`);
+                };
+                
+                const stopMove = (e) => {
+                    if (e.cancelable) e.preventDefault();
+                    window.gameKeys[dir] = false;
+                };
+
+                btn.addEventListener('touchstart', startMove, { passive: false });
+                btn.addEventListener('touchend', stopMove);
+                btn.addEventListener('touchcancel', stopMove);
+                btn.addEventListener('mousedown', startMove);
+                btn.addEventListener('mouseup', stopMove);
+                btn.addEventListener('mouseleave', stopMove);
             });
             
             setTimeout(() => {
