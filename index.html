@@ -861,19 +861,21 @@
             // D-pad
             if (window.gameKeys.up) { moveX += fwd.x; moveZ += fwd.z; }
             if (window.gameKeys.down) { moveX -= fwd.x; moveZ -= fwd.z; }
-            if (window.gameKeys.left) { localPlayer.yaw += localPlayer.rotSpeed * dt; }
-            if (window.gameKeys.right) { localPlayer.yaw -= localPlayer.rotSpeed * dt; }
+            if (window.gameKeys.left) { moveX -= rgt.x; moveZ -= rgt.z; }
+            if (window.gameKeys.right) { moveX += rgt.x; moveZ += rgt.z; }
+
             
-            // CORRECCIÓN 2: Joystick inteligente
-            // Vertical (y) = mover adelante/atrás
-            // Horizontal (x) = rotar cámara
+            // Joystick inteligente
+            // Vertical (y) = mirar arriba/abajo (pitch)
+            // Horizontal (x) = rotar cámara (yaw)
             if (Math.abs(joystickVector.y) > 0.1) {
-                moveX += fwd.x * joystickVector.y;
-                moveZ += fwd.z * joystickVector.y;
+                localPlayer.pitch -= joystickVector.y * localPlayer.rotSpeed * dt;
+                localPlayer.pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, localPlayer.pitch));
             }
             if (Math.abs(joystickVector.x) > 0.1) {
                 localPlayer.yaw -= joystickVector.x * localPlayer.rotSpeed * dt;
             }
+
             
             const len = Math.sqrt(moveX*moveX + moveZ*moveZ);
             let isMoving = false;
