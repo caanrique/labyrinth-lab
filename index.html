@@ -55,10 +55,6 @@
         @keyframes pulse-tag { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
         .room-info { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; font-size: 14px; z-index: 10001; }
         
-        #debug-panel { position: fixed; bottom: 0; left: 0; width: 100%; max-height: 40vh; overflow-y: auto; background: rgba(0,0,0,0.95); color: #0f0; font-family: monospace; font-size: 11px; padding: 10px; z-index: 99999; border-top: 2px solid #0f0; display: none; }
-        #debug-panel.visible { display: block; }
-        #debug-toggle { position: fixed; bottom: 10px; left: 10px; background: #0f0; color: #000; border: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; z-index: 100000; cursor: pointer; }
-        
         .battle-checkbox { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 15px auto; padding: 12px; background: rgba(255, 50, 50, 0.1); border: 2px solid #ff3333; border-radius: 8px; max-width: 400px; }
         .battle-checkbox input[type="checkbox"] { width: 24px; height: 24px; cursor: pointer; }
         .battle-checkbox label { color: #ff6666; font-weight: bold; font-size: 15px; cursor: pointer; text-align: left; }
@@ -66,6 +62,13 @@
         .color-picker { display: flex; justify-content: center; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
         .color-btn { width: 45px; height: 45px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform 0.2s; }
         .color-btn.selected { border-color: white; transform: scale(1.2); box-shadow: 0 0 15px rgba(255,255,255,0.7); }
+        
+        /* NUEVO: Estilo para selector de color bloqueado */
+        .color-picker.disabled .color-btn {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
         
         .input-group { display: flex; justify-content: center; gap: 5px; margin: 10px 0; }
         .input-group .lobby-input { margin: 0; }
@@ -146,7 +149,6 @@
                 <div class="setting-row"><label>🧱 Grosor: <span id="thickness-val">1.0x</span></label><input type="range" id="thickness-slider" min="0.5" max="2.0" step="0.1" value="1.0"></div>
                 <div class="setting-row"><label>📏 Altura: <span id="height-val">2.0m</span></label><input type="range" id="height-slider" min="1.0" max="4.0" step="0.5" value="2.0"></div>
                 <div class="setting-row"><label>🎨 Material:</label><select id="material-select"><option value="stone">🪨 Piedra</option><option value="brick">🧱 Ladrillo</option><option value="wood">🪵 Madera</option><option value="metal">⚙️ Metal</option><option value="crystal">💎 Cristal</option><option value="moss">🌿 Musgo</option><option value="lava">🌋 Lava</option><option value="snow">❄️ Nieve</option></select></div>
-                <!-- CORRECCIÓN 1: Rango de luz reducido (máx 200%, default 100%) -->
                 <div class="setting-row"><label>💡 Luz ambiental: <span id="ambient-val">100%</span></label><input type="range" id="ambient-slider" min="0" max="200" step="10" value="100"></div>
                 <div class="setting-row"><label>🔦 Linterna: <span id="player-light-val">5.0</span></label><input type="range" id="player-light-slider" min="0" max="10" step="0.5" value="5.0"></div>
                 <div class="setting-row"><label>📡 Alcance: <span id="light-distance-val">50m</span></label><input type="range" id="light-distance-slider" min="10" max="100" step="5" value="50"></div>
@@ -178,9 +180,6 @@
         </div>
     </div>
 
-    <button id="debug-toggle">🐛 DEBUG</button>
-    <div id="debug-panel"></div>
-
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.10.1/dist/nipplejs.min.js"></script>
 
@@ -207,32 +206,6 @@
             console.error("❌ Error Firebase:", error);
             alert("ERROR: No se pudo conectar a Firebase.");
         }
-
-        const debugPanel = document.getElementById('debug-panel');
-        const debugToggle = document.getElementById('debug-toggle');
-        let debugVisible = false;
-
-        debugToggle.onclick = () => {
-            debugVisible = !debugVisible;
-            debugPanel.classList.toggle('visible', debugVisible);
-            debugToggle.textContent = debugVisible ? '🐛 CERRAR' : '🐛 DEBUG';
-        };
-
-        function debugLog(msg) {
-            const time = new Date().toLocaleTimeString();
-            const line = document.createElement('div');
-            line.textContent = `[${time}] ${msg}`;
-            line.style.borderBottom = '1px solid #333';
-            line.style.padding = '3px 0';
-            debugPanel.appendChild(line);
-            debugPanel.scrollTop = debugPanel.scrollHeight;
-        }
-
-        const originalLog = console.log;
-        console.log = (...args) => {
-            originalLog.apply(console, args);
-            debugLog(args.join(' '));
-        };
 
         let audioCtx;
         let soundOn = true;
@@ -328,6 +301,10 @@
 
         document.querySelectorAll('#game-color-picker .color-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+                // NUEVO: Verificar si el selector está bloqueado
+                const colorPicker = document.getElementById('game-color-picker');
+                if (colorPicker.classList.contains('disabled')) return;
+                
                 document.querySelectorAll('#game-color-picker .color-btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
                 myColor = btn.dataset.color;
@@ -365,7 +342,7 @@
                         host: playerId, 
                         maxPlayers: maxPlayers,
                         battleRoyale: false,
-                        hostDesignReady: false, // CORRECCIÓN 2: Flag de diseño terminado
+                        hostDesignReady: false,
                         grid: grid, 
                         goal: null,
                         settings: { thickness: 1.0, height: 2.0, material: 'stone', ambient: 1.0, playerLight: 5.0, lightDist: 50 },
@@ -393,10 +370,19 @@
                 document.getElementById('btn-host-ready').disabled = true;
                 document.getElementById('btn-ready').disabled = true;
 
-                const savedColor = localStorage.getItem('ll_color');
-                if (savedColor) {
-                    const savedBtn = document.querySelector(`#game-color-picker .color-btn[data-color="${savedColor}"]`);
-                    if (savedBtn) savedBtn.click();
+                // NUEVO: Si es anfitrión, habilitar selector de color inmediatamente
+                // Si es invitado, bloquearlo hasta que el anfitrión esté listo
+                const colorPicker = document.getElementById('game-color-picker');
+                if (isHost) {
+                    colorPicker.classList.remove('disabled');
+                    const savedColor = localStorage.getItem('ll_color');
+                    if (savedColor) {
+                        const savedBtn = document.querySelector(`#game-color-picker .color-btn[data-color="${savedColor}"]`);
+                        if (savedBtn) savedBtn.click();
+                    }
+                } else {
+                    colorPicker.classList.add('disabled');
+                    statusEl.textContent = '⏳ Espera a que el anfitrión termine el diseño para elegir color';
                 }
                 
                 if (isHost) {
@@ -410,7 +396,6 @@
                     
                     document.getElementById('btn-host-ready').onclick = () => {
                         if (!colorSelectedInRoom) { alert("Por favor, selecciona un color primero."); return; }
-                        // CORRECCIÓN 2: Al presionar "listo", marcar también que el diseño está terminado
                         update(ref(db, `rooms/${roomId}`), { hostDesignReady: true });
                         update(ref(db, `rooms/${roomId}/players/${playerId}`), { ready: true });
                     };
@@ -418,7 +403,6 @@
                 } else {
                     document.getElementById('guest-instruction').style.display = 'block';
                     document.getElementById('btn-ready').style.display = 'block';
-                    // CORRECCIÓN 2: Invitados empiezan con botón deshabilitado y mensaje de espera
                     document.getElementById('btn-ready').disabled = true;
                     document.getElementById('btn-ready').textContent = '⏳ Espera al anfitrión...';
                     document.getElementById('btn-ready').style.background = '#555';
@@ -450,7 +434,7 @@
                 goal = data.goal;
                 players = data.players || {};
                 battleRoyaleMode = data.battleRoyale === true;
-                const hostDesignReady = data.hostDesignReady === true; // CORRECCIÓN 2
+                const hostDesignReady = data.hostDesignReady === true;
                 
                 if (players[playerId]) {
                     localPlayer.hasStick = players[playerId].hasStick || false;
@@ -482,7 +466,24 @@
                         statusEl.textContent = `👥 Jugadores listos: ${readyCount}/${totalPlayers}${modeText}`;
                     }
                     
-                    // CORRECCIÓN 2: Lógica de flujo secuencial
+                    // NUEVO: Si es invitado y el anfitrión terminó el diseño, habilitar selector de color
+                    if (!isHost && hostDesignReady) {
+                        const colorPicker = document.getElementById('game-color-picker');
+                        if (colorPicker.classList.contains('disabled')) {
+                            colorPicker.classList.remove('disabled');
+                            const statusEl = document.getElementById('color-selection-status');
+                            statusEl.textContent = '🎨 ¡Ahora puedes elegir tu color!';
+                            statusEl.style.color = '#4CAF50';
+                            
+                            // Pre-seleccionar color guardado si existe
+                            const savedColor = localStorage.getItem('ll_color');
+                            if (savedColor && !colorSelectedInRoom) {
+                                const savedBtn = document.querySelector(`#game-color-picker .color-btn[data-color="${savedColor}"]`);
+                                if (savedBtn) savedBtn.click();
+                            }
+                        }
+                    }
+                    
                     if (isHost) {
                         const hostReady = players[playerId] && players[playerId].ready === true;
                         const btnHostReady = document.getElementById('btn-host-ready');
@@ -493,7 +494,6 @@
                             btnHostReady.textContent = '✅ ¡Diseño terminado!';
                             btnHostReady.style.background = '#555';
                             
-                            // Contar solo invitados listos (excluyendo al anfitrión)
                             const guestReadyCount = Object.keys(players).filter(pid => pid !== playerId && players[pid].ready === true).length;
                             const expectedGuests = maxPlayers - 1;
                             
@@ -520,18 +520,16 @@
                         const btnReady = document.getElementById('btn-ready');
                         
                         if (guestReady) {
-                            // Ya presionó listo
                             btnReady.disabled = true;
                             btnReady.textContent = '✅ ¡Listo!';
                             btnReady.style.background = '#555';
                             document.getElementById('status').textContent = 'Esperando a que el anfitrión inicie la partida...';
                         } else if (hostDesignReady) {
-                            // CORRECCIÓN 2: El anfitrión terminó el diseño, habilitar botón del invitado
                             if (colorSelectedInRoom) {
                                 btnReady.disabled = false;
                                 btnReady.textContent = '✅ Listo para jugar';
                                 btnReady.style.background = '#28a745';
-                                document.getElementById('status').textContent = '¡El anfitrión terminó! Elige tu color y presiona "Listo".';
+                                document.getElementById('status').textContent = '¡El anfitrión terminó! Presiona "Listo".';
                             } else {
                                 btnReady.disabled = true;
                                 btnReady.textContent = '🎨 Elige color primero';
@@ -539,7 +537,6 @@
                                 document.getElementById('status').textContent = '¡El anfitrión terminó! Selecciona un color para continuar.';
                             }
                         } else {
-                            // CORRECCIÓN 2: Aún esperando al anfitrión
                             btnReady.disabled = true;
                             btnReady.textContent = '⏳ Espera al anfitrión...';
                             btnReady.style.background = '#555';
