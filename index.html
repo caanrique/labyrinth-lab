@@ -103,11 +103,6 @@
             <p id="host-instruction" style="text-align: center; color: #4CAF50; font-weight: bold; display: none;">👑 Eres el ANFITRIÓN. Dibuja el laberinto y coloca la META.</p>
             <p id="guest-instruction" style="text-align: center; color: #0066ff; font-weight: bold; display: none;">👥 Eres INVITADO. Espera a que el anfitrión genere el juego.</p>
             
-            <button id="btn-host-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 15px auto; background: #28a745; display: none;">✅ Estoy listo para generar</button>
-            <button id="btn-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 15px auto; background: #28a745; display: none;">✅ Listo para jugar</button>
-            
-            <p id="players-ready-status" style="margin-top: 15px; color: #4CAF50; font-weight: bold; text-align: center;"></p>
-            
             <div class="btn-row">
                 <button id="btn-fill-white" style="background: white; color: black;">⬜ Fondo blanco</button>
                 <button id="btn-fill-black" style="background: black; color: white;">⬛ Fondo negro</button>
@@ -134,6 +129,11 @@
                 <div class="setting-row"><label>🔦 Linterna: <span id="player-light-val">2.5</span></label><input type="range" id="player-light-slider" min="0" max="5" step="0.5" value="2.5"></div>
                 <div class="setting-row"><label>📡 Alcance: <span id="light-distance-val">25m</span></label><input type="range" id="light-distance-slider" min="5" max="50" step="5" value="25"></div>
             </div>
+            
+            <!-- BOTONES DE LISTO REUBICADOS AL FINAL -->
+            <p id="players-ready-status" style="margin: 15px 0; color: #4CAF50; font-weight: bold; text-align: center;"></p>
+            <button id="btn-host-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 10px auto; background: #28a745; display: none;">✅ Estoy listo para generar</button>
+            <button id="btn-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 10px auto; background: #28a745; display: none;">✅ Listo para jugar</button>
             
             <button id="btn-generate" class="generate-btn" style="display: none;" disabled>🎮 Generar 3D e Iniciar</button>
             <div id="status" style="margin-top: 10px;">Esperando...</div>
@@ -709,14 +709,12 @@
             
             camera.position.set(localPlayer.x, 1.5, localPlayer.z);
             
-            // CORRECCIÓN DEL D-PAD: Eventos robustos con passive: false y touchcancel
             document.querySelectorAll('.dpad-btn').forEach(btn => {
                 const dir = btn.dataset.dir;
                 
                 const startMove = (e) => {
                     if (e.cancelable) e.preventDefault();
                     window.gameKeys[dir] = true;
-                    console.log(`⬆️ D-pad ${dir} ACTIVADO`);
                 };
                 
                 const stopMove = (e) => {
@@ -793,7 +791,6 @@
                 camera.updateProjectionMatrix();
                 renderer.setSize(width, height);
                 renderer.setPixelRatio(window.devicePixelRatio);
-                console.log(`📱 Resize: ${width}x${height}`);
             }
             window.addEventListener('resize', onResize);
             window.addEventListener('orientationchange', () => { setTimeout(onResize, 200); });
@@ -947,23 +944,29 @@
                 isMoving = true;
             }
             
+            // CORRECCIÓN DE COLISIONES: Lógica simplificada y robusta
             if (grid && grid[0]) {
-                const margin = 0.3;
-                const newX = localPlayer.x + mx;
-                const newZ = localPlayer.z + mz;
+                const nextX = localPlayer.x + mx;
+                const nextZ = localPlayer.z + mz;
                 
-                const gxNew = Math.round(newX);
-                const gzCurrent = Math.round(localPlayer.z);
-                const canMoveX = (gxNew >= 0 && gxNew < 21 && gzCurrent >= 0 && gzCurrent < 21 && 
-                                  grid[gzCurrent][gxNew] === 0 && Math.abs(newX - gxNew) > margin);
+                // Comprobar colisión en eje X
+                const cellX = Math.round(nextX);
+                const cellZ_current = Math.round(localPlayer.z);
+                let canMoveX = true;
+                if (cellX >= 0 && cellX < 21 && cellZ_current >= 0 && cellZ_current < 21) {
+                    if (grid[cellZ_current][cellX] === 1) canMoveX = false;
+                }
                 
-                const gzNew = Math.round(newZ);
-                const gxCurrent = Math.round(localPlayer.x);
-                const canMoveZ = (gzNew >= 0 && gzNew < 21 && gxCurrent >= 0 && gxCurrent < 21 && 
-                                  grid[gzNew][gxCurrent] === 0 && Math.abs(newZ - gzNew) > margin);
+                // Comprobar colisión en eje Z
+                const cellZ = Math.round(nextZ);
+                const cellX_current = Math.round(localPlayer.x);
+                let canMoveZ = true;
+                if (cellZ >= 0 && cellZ < 21 && cellX_current >= 0 && cellX_current < 21) {
+                    if (grid[cellZ][cellX_current] === 1) canMoveZ = false;
+                }
                 
-                if (canMoveX) localPlayer.x = newX;
-                if (canMoveZ) localPlayer.z = newZ;
+                if (canMoveX) localPlayer.x = nextX;
+                if (canMoveZ) localPlayer.z = nextZ;
             }
 
             if (isMoving) {
