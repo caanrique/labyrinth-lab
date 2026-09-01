@@ -13,7 +13,7 @@
         .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; }
         
         #lobby-screen { text-align: center; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 20px; }
-        .lobby-input { width: 80%; padding: 12px; font-size: 18px; text-align: center; border: 2px solid #4CAF50; border-radius: 5px; background: #222; color: white; margin: 10px 0; text-transform: uppercase; }
+        .lobby-input { width: 100%; padding: 12px; font-size: 18px; text-align: center; border: 2px solid #4CAF50; border-radius: 5px; background: #222; color: white; text-transform: uppercase; }
         .lobby-btn { padding: 12px 25px; font-size: 16px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
         .lobby-btn:disabled { background: #555; cursor: not-allowed; }
         
@@ -60,13 +60,16 @@
         #debug-panel.visible { display: block; }
         #debug-toggle { position: fixed; bottom: 10px; left: 10px; background: #0f0; color: #000; border: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; z-index: 100000; cursor: pointer; }
         
-        .battle-checkbox { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 15px 0; padding: 12px; background: rgba(255, 50, 50, 0.1); border: 2px solid #ff3333; border-radius: 8px; }
+        .battle-checkbox { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 15px auto; padding: 12px; background: rgba(255, 50, 50, 0.1); border: 2px solid #ff3333; border-radius: 8px; max-width: 400px; }
         .battle-checkbox input[type="checkbox"] { width: 24px; height: 24px; cursor: pointer; }
-        .battle-checkbox label { color: #ff6666; font-weight: bold; font-size: 15px; cursor: pointer; }
+        .battle-checkbox label { color: #ff6666; font-weight: bold; font-size: 15px; cursor: pointer; text-align: left; }
 
         .color-picker { display: flex; justify-content: center; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
         .color-btn { width: 45px; height: 45px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform 0.2s; }
         .color-btn.selected { border-color: white; transform: scale(1.2); box-shadow: 0 0 15px rgba(255,255,255,0.7); }
+        
+        .input-group { display: flex; justify-content: center; gap: 5px; margin: 10px 0; }
+        .input-group .lobby-input { margin: 0; }
     </style>
 </head>
 <body>
@@ -76,7 +79,13 @@
         
         <div id="lobby-screen">
             <h2>🚪 Sala de Espera</h2>
-            <input type="text" id="room-input" class="lobby-input" placeholder="Código de sala (ej: LAB-123)" maxlength="10">
+            
+            <!-- MEJORA 2: Grupo de input y botón de copiar -->
+            <div class="input-group">
+                <input type="text" id="room-input" class="lobby-input" placeholder="Código (ej: LAB-123)" maxlength="10">
+                <button class="lobby-btn" onclick="copyRoomCode()" id="copy-btn" style="background: #0066ff; margin: 0; padding: 12px 15px;">📋</button>
+            </div>
+            
             <div style="margin: 10px 0;"><button class="lobby-btn" onclick="generateRoomCode()">🎲 Generar Código</button></div>
             
             <div id="player-count-section" style="margin: 15px 0;">
@@ -89,11 +98,6 @@
                 </select>
             </div>
             
-            <div id="battle-mode-section" class="battle-checkbox">
-                <input type="checkbox" id="battle-mode">
-                <label for="battle-mode">⚔️ Modo Todos contra Todos<br><small style="color: #aaa; font-weight: normal;">(Todos tienen palo para taggear. Solo aplica si creas la sala)</small></label>
-            </div>
-            
             <button class="lobby-btn" id="join-btn" onclick="joinRoom()" style="width: 80%; font-size: 18px; margin-top: 15px;">🎮 Unirse / Crear Sala</button>
             <p id="lobby-status" style="margin-top: 15px; color: #4CAF50;"></p>
         </div>
@@ -104,7 +108,12 @@
             <p id="host-instruction" style="text-align: center; color: #4CAF50; font-weight: bold; display: none;">👑 Eres el ANFITRIÓN. Dibuja el laberinto y coloca la META.</p>
             <p id="guest-instruction" style="text-align: center; color: #0066ff; font-weight: bold; display: none;">👥 Eres INVITADO. Espera a que el anfitrión genere el juego.</p>
             
-            <!-- MEJORA: Selector de color dentro de la sala, antes de estar listo -->
+            <!-- MEJORA 1: Casilla de batalla movida aquí, solo visible para el anfitrión -->
+            <div id="host-battle-section" class="battle-checkbox" style="display: none;">
+                <input type="checkbox" id="battle-mode-game">
+                <label for="battle-mode-game">⚔️ Activar Modo Todos contra Todos<br><small style="color: #aaa; font-weight: normal;">(Todos tendrán palo para taggear al iniciar)</small></label>
+            </div>
+
             <div class="marker-section" style="background: rgba(255,255,255,0.05); border: 1px solid #4CAF50; margin-bottom: 20px;">
                 <label style="font-weight: bold; color: #4CAF50;">🎨 Elige tu color para la partida:</label><br>
                 <div class="color-picker" id="game-color-picker">
@@ -291,9 +300,30 @@
         const roomInput = document.getElementById('room-input');
         const lobbyStatus = document.getElementById('lobby-status');
 
-        window.generateRoomCode = () => { roomInput.value = "LAB-" + Math.random().toString(36).substr(2, 4).toUpperCase(); };
+        window.generateRoomCode = () => { 
+            roomInput.value = "LAB-" + Math.random().toString(36).substr(2, 4).toUpperCase(); 
+        };
 
-        // Lógica del selector de color DENTRO de la sala
+        // MEJORA 2: Función para copiar el código al portapapeles
+        window.copyRoomCode = async () => {
+            if (!roomInput.value) {
+                alert("Primero genera o escribe un código de sala.");
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(roomInput.value);
+                const btn = document.getElementById('copy-btn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = "✅";
+                setTimeout(() => { btn.innerHTML = "📋"; }, 2000);
+            } catch (err) {
+                console.error('Error al copiar: ', err);
+                roomInput.select();
+                document.execCommand('copy');
+                alert("Código copiado al portapapeles.");
+            }
+        };
+
         document.querySelectorAll('#game-color-picker .color-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('#game-color-picker .color-btn').forEach(b => b.classList.remove('selected'));
@@ -306,11 +336,9 @@
                 statusEl.textContent = `✅ Color seleccionado. ¡Ahora puedes presionar "Listo"!`;
                 statusEl.style.color = '#4CAF50';
                 
-                // Habilitar botones de listo
                 document.getElementById('btn-host-ready').disabled = false;
                 document.getElementById('btn-ready').disabled = false;
 
-                // Actualizar Firebase inmediatamente
                 if (roomId && playerId) {
                     update(ref(db, `rooms/${roomId}/players/${playerId}`), { color: myColor });
                 }
@@ -325,7 +353,6 @@
                 if (!roomId) { alert("Ingresa un código de sala"); return; }
                 
                 const maxPlayers = parseInt(document.getElementById('player-count').value);
-                const battleMode = document.getElementById('battle-mode').checked;
                 
                 lobbyStatus.textContent = "Conectando...";
                 document.getElementById('join-btn').disabled = true;
@@ -338,7 +365,7 @@
                     await set(roomRef, {
                         host: playerId, 
                         maxPlayers: maxPlayers,
-                        battleRoyale: battleMode,
+                        battleRoyale: false, // Se actualizará al generar si el anfitrión lo marca
                         grid: grid, 
                         goal: null,
                         settings: { thickness: 1.0, height: 2.0, material: 'stone', ambient: 0.8, playerLight: 2.5, lightDist: 25 },
@@ -358,7 +385,6 @@
                 document.getElementById('room-display').textContent = `Sala: ${roomId} ${isHost ? '(Anfitrión)' : '(Invitado)'}`;
                 document.getElementById('room-display-3d').textContent = `Sala: ${roomId}`;
                 
-                // Resetear estado de selección de color al entrar
                 colorSelectedInRoom = false;
                 document.querySelectorAll('#game-color-picker .color-btn').forEach(b => b.classList.remove('selected'));
                 const statusEl = document.getElementById('color-selection-status');
@@ -367,16 +393,18 @@
                 document.getElementById('btn-host-ready').disabled = true;
                 document.getElementById('btn-ready').disabled = true;
 
-                // Si tiene un color guardado, pre-seleccionarlo para mejor UX
                 const savedColor = localStorage.getItem('ll_color');
                 if (savedColor) {
                     const savedBtn = document.querySelector(`#game-color-picker .color-btn[data-color="${savedColor}"]`);
                     if (savedBtn) {
-                        savedBtn.click(); // Esto dispara el evento, actualiza Firebase y habilita los botones
+                        savedBtn.click();
                     }
                 }
                 
                 if (isHost) {
+                    // MEJORA 1: Mostrar la casilla de batalla solo al anfitrión
+                    document.getElementById('host-battle-section').style.display = 'flex';
+                    
                     document.getElementById('host-instruction').style.display = 'block';
                     document.getElementById('btn-place-goal').style.display = 'inline-block';
                     document.getElementById('btn-host-ready').style.display = 'block';
@@ -462,7 +490,7 @@
                                 document.getElementById('status').textContent = `Esperando a que los ${maxPlayers} jugadores estén listos (${readyCount}/${maxPlayers})...`;
                             }
                         } else {
-                            btnHostReady.disabled = false; // Se controla por colorSelectedInRoom en el onclick
+                            btnHostReady.disabled = false;
                             btnHostReady.textContent = '✅ Estoy listo para generar';
                             btnHostReady.style.background = '#28a745';
                             btnGenerate.disabled = true;
@@ -638,11 +666,13 @@
         async function generateGame() {
             if (!goal) { alert("El anfitrión debe colocar la meta"); return; }
             
+            // MEJORA 1: Leer el estado de la casilla de batalla desde la pantalla de juego
+            const battleMode = document.getElementById('battle-mode-game').checked;
+            
             const roomSnapshot = await get(ref(db, `rooms/${roomId}`));
             const roomData = roomSnapshot.val();
             const currentGrid = ensureGrid2D(roomData.grid);
             const maxPlayers = roomData.maxPlayers || 2;
-            const isBattleRoyale = roomData.battleRoyale === true;
             
             const startPositions = findFarthestStartPositions(currentGrid, maxPlayers, goal);
             if (startPositions.length < maxPlayers) {
@@ -686,17 +716,24 @@
                 return;
             }
             
-            const updates = { grid: currentGrid, goal: goal, settings: settings, gameStarted: true };
+            const updates = { 
+                grid: currentGrid, 
+                goal: goal, 
+                settings: settings, 
+                gameStarted: true,
+                battleRoyale: battleMode // Actualizar el modo batalla justo antes de generar
+            };
+            
             playerIds.forEach((pid, idx) => {
                 const pos = startPositions[idx] || startPositions[0];
                 updates[`players/${pid}/startX`] = pos.x;
                 updates[`players/${pid}/startZ`] = pos.y;
                 updates[`players/${pid}/x`] = pos.x;
                 updates[`players/${pid}/z`] = pos.y;
-                updates[`players/${pid}/hasStick`] = isBattleRoyale ? true : (idx === 0);
+                updates[`players/${pid}/hasStick`] = battleMode ? true : (idx === 0);
             });
             
-            console.log(`🚀 Generando para ${playerIds.length} jugadores (posiciones lejanas${isBattleRoyale ? ', MODO BATALLA' : ''})`);
+            console.log(`🚀 Generando para ${playerIds.length} jugadores (posiciones lejanas${battleMode ? ', MODO BATALLA' : ''})`);
             update(ref(db, `rooms/${roomId}`), updates);
         }
 
@@ -849,7 +886,6 @@
 
         function createAvatar(pid, colorHex, startX, startZ, currentPlayers) {
             const group = new THREE.Group();
-            // Three.js acepta nativamente strings hexadecimales como "#ff0000"
             const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshStandardMaterial({ color: colorHex }));
             head.position.y = 1.2;
             const body = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.0, 16), new THREE.MeshStandardMaterial({ color: colorHex }));
