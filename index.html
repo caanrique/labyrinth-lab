@@ -14,9 +14,6 @@
         
         #lobby-screen { text-align: center; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 20px; }
         .lobby-input { width: 80%; padding: 12px; font-size: 18px; text-align: center; border: 2px solid #4CAF50; border-radius: 5px; background: #222; color: white; margin: 10px 0; text-transform: uppercase; }
-        .color-picker { display: flex; justify-content: center; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
-        .color-btn { width: 40px; height: 40px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform 0.2s; }
-        .color-btn.selected { border-color: white; transform: scale(1.2); box-shadow: 0 0 10px rgba(255,255,255,0.5); }
         .lobby-btn { padding: 12px 25px; font-size: 16px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
         .lobby-btn:disabled { background: #555; cursor: not-allowed; }
         
@@ -33,7 +30,6 @@
         .generate-btn { padding: 15px 30px; font-size: 18px; background: #4CAF50; color: white; border: none; border-radius: 5px; display: block; margin: 20px auto; cursor: pointer; }
         .generate-btn:disabled { background: #555; cursor: not-allowed; opacity: 0.6; }
         #status { text-align: center; margin: 10px 0; color: #aaa; font-weight: bold; }
-        #marker-status { margin-top: 5px; font-size: 12px; color: #aaa; }
         
         #game-container { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: #000; overflow: hidden; }
         .game-btn { position: absolute; padding: 8px 15px; font-size: 14px; background: rgba(0,0,0,0.6); color: white; border: 1px solid white; border-radius: 5px; z-index: 10001; cursor: pointer; }
@@ -47,11 +43,11 @@
         .dpad-btn { position: absolute; width: 60px; height: 60px; background: rgba(255,255,255,0.2); border: 2px solid white; border-radius: 10px; color: white; font-size: 24px; cursor: pointer; user-select: none; touch-action: manipulation; z-index: 10001; }
         .dpad-btn:active { background: rgba(255,255,255,0.5); }
         
-        /* MEJORA 2: Controles elevados para evitar que se pierdan en el borde inferior */
+        /* Controles elevados */
         #joystick-zone { position: absolute; bottom: 80px; right: 30px; width: 180px; height: 180px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); z-index: 10001; }
         
         #tag-btn {
-            display: none; position: absolute; bottom: 280px; right: 30px; /* Elevado para no solaparse con el joystick */
+            display: none; position: absolute; bottom: 280px; right: 30px;
             width: 80px; height: 80px; border-radius: 50%;
             background: rgba(255, 50, 50, 0.8); border: 3px solid white;
             color: white; font-size: 32px; font-weight: bold;
@@ -67,6 +63,10 @@
         .battle-checkbox { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 15px 0; padding: 12px; background: rgba(255, 50, 50, 0.1); border: 2px solid #ff3333; border-radius: 8px; }
         .battle-checkbox input[type="checkbox"] { width: 24px; height: 24px; cursor: pointer; }
         .battle-checkbox label { color: #ff6666; font-weight: bold; font-size: 15px; cursor: pointer; }
+
+        .color-picker { display: flex; justify-content: center; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
+        .color-btn { width: 45px; height: 45px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform 0.2s; }
+        .color-btn.selected { border-color: white; transform: scale(1.2); box-shadow: 0 0 15px rgba(255,255,255,0.7); }
     </style>
 </head>
 <body>
@@ -89,22 +89,11 @@
                 </select>
             </div>
             
-            <!-- MEJORA 1: Casilla visible en el lobby para que el anfitrión la active antes de crear la sala -->
             <div id="battle-mode-section" class="battle-checkbox">
                 <input type="checkbox" id="battle-mode">
                 <label for="battle-mode">⚔️ Modo Todos contra Todos<br><small style="color: #aaa; font-weight: normal;">(Todos tienen palo para taggear. Solo aplica si creas la sala)</small></label>
             </div>
             
-            <p style="margin: 15px 0; color: #aaa;">Elige tu color:</p>
-            <div class="color-picker" id="color-picker">
-                <div class="color-btn selected" style="background: #ff0000;" data-color="0xff0000"></div>
-                <div class="color-btn" style="background: #0066ff;" data-color="0x0066ff"></div>
-                <div class="color-btn" style="background: #00ff00;" data-color="0x00ff00"></div>
-                <div class="color-btn" style="background: #ffff00;" data-color="0xffff00"></div>
-                <div class="color-btn" style="background: #ff00ff;" data-color="0xff00ff"></div>
-                <div class="color-btn" style="background: #ff8800;" data-color="0xff8800"></div>
-                <div class="color-btn" style="background: #ffffff;" data-color="0xffffff"></div>
-            </div>
             <button class="lobby-btn" id="join-btn" onclick="joinRoom()" style="width: 80%; font-size: 18px; margin-top: 15px;">🎮 Unirse / Crear Sala</button>
             <p id="lobby-status" style="margin-top: 15px; color: #4CAF50;"></p>
         </div>
@@ -115,6 +104,21 @@
             <p id="host-instruction" style="text-align: center; color: #4CAF50; font-weight: bold; display: none;">👑 Eres el ANFITRIÓN. Dibuja el laberinto y coloca la META.</p>
             <p id="guest-instruction" style="text-align: center; color: #0066ff; font-weight: bold; display: none;">👥 Eres INVITADO. Espera a que el anfitrión genere el juego.</p>
             
+            <!-- MEJORA: Selector de color dentro de la sala, antes de estar listo -->
+            <div class="marker-section" style="background: rgba(255,255,255,0.05); border: 1px solid #4CAF50; margin-bottom: 20px;">
+                <label style="font-weight: bold; color: #4CAF50;">🎨 Elige tu color para la partida:</label><br>
+                <div class="color-picker" id="game-color-picker">
+                    <div class="color-btn" style="background: #ff0000;" data-color="#ff0000"></div>
+                    <div class="color-btn" style="background: #0066ff;" data-color="#0066ff"></div>
+                    <div class="color-btn" style="background: #00ff00;" data-color="#00ff00"></div>
+                    <div class="color-btn" style="background: #ffff00;" data-color="#ffff00"></div>
+                    <div class="color-btn" style="background: #ff00ff;" data-color="#ff00ff"></div>
+                    <div class="color-btn" style="background: #ff8800;" data-color="#ff8800"></div>
+                    <div class="color-btn" style="background: #ffffff;" data-color="#ffffff"></div>
+                </div>
+                <p id="color-selection-status" style="font-size: 14px; color: #ff6666; font-weight: bold;">⚠️ Selecciona un color para habilitar el botón "Listo"</p>
+            </div>
+
             <div class="btn-row">
                 <button id="btn-fill-white" style="background: white; color: black;">⬜ Fondo blanco</button>
                 <button id="btn-fill-black" style="background: black; color: white;">⬛ Fondo negro</button>
@@ -127,7 +131,6 @@
             <div class="marker-section">
                 <label style="font-weight: bold;">📍 Meta del laberinto:</label><br>
                 <button id="btn-place-goal" style="background: #28a745; color: white; display: none;">🎯 Colocar META (Solo Anfitrión)</button>
-                <div id="marker-status"></div>
             </div>
             
             <canvas id="draw-canvas" width="420" height="420"></canvas>
@@ -143,8 +146,8 @@
             </div>
             
             <p id="players-ready-status" style="margin: 15px 0; color: #4CAF50; font-weight: bold; text-align: center;"></p>
-            <button id="btn-host-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 10px auto; background: #28a745; display: none;">✅ Estoy listo para generar</button>
-            <button id="btn-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 10px auto; background: #28a745; display: none;">✅ Listo para jugar</button>
+            <button id="btn-host-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 10px auto; background: #28a745; display: none;" disabled>✅ Estoy listo para generar</button>
+            <button id="btn-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 10px auto; background: #28a745; display: none;" disabled>✅ Listo para jugar</button>
             
             <button id="btn-generate" class="generate-btn" style="display: none;" disabled>🎮 Generar 3D e Iniciar</button>
             <div id="status" style="margin-top: 10px;">Esperando...</div>
@@ -270,7 +273,7 @@
         localStorage.setItem('ll_playerId', playerId);
         
         let roomId = "", isHost = false;
-        let myColor = localStorage.getItem('ll_color') || "0xff0000";
+        let myColor = localStorage.getItem('ll_color') || "#ff0000";
         let grid = Array(21).fill(null).map(() => Array(21).fill(0));
         let goal = null, gameStarted = false, gameWon = false;
         let players = {};
@@ -279,6 +282,7 @@
         let joystickVector = { x: 0, y: 0 };
         let mapVisible = false;
         let battleRoyaleMode = false;
+        let colorSelectedInRoom = false;
 
         window.gameKeys = { up: false, down: false, left: false, right: false };
 
@@ -289,14 +293,28 @@
 
         window.generateRoomCode = () => { roomInput.value = "LAB-" + Math.random().toString(36).substr(2, 4).toUpperCase(); };
 
-        document.querySelectorAll('.color-btn').forEach(btn => {
+        // Lógica del selector de color DENTRO de la sala
+        document.querySelectorAll('#game-color-picker .color-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+                document.querySelectorAll('#game-color-picker .color-btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
                 myColor = btn.dataset.color;
                 localStorage.setItem('ll_color', myColor);
+                colorSelectedInRoom = true;
+                
+                const statusEl = document.getElementById('color-selection-status');
+                statusEl.textContent = `✅ Color seleccionado. ¡Ahora puedes presionar "Listo"!`;
+                statusEl.style.color = '#4CAF50';
+                
+                // Habilitar botones de listo
+                document.getElementById('btn-host-ready').disabled = false;
+                document.getElementById('btn-ready').disabled = false;
+
+                // Actualizar Firebase inmediatamente
+                if (roomId && playerId) {
+                    update(ref(db, `rooms/${roomId}/players/${playerId}`), { color: myColor });
+                }
             });
-            if (btn.dataset.color === myColor) btn.classList.add('selected');
         });
 
         window.joinRoom = async () => {
@@ -340,15 +358,34 @@
                 document.getElementById('room-display').textContent = `Sala: ${roomId} ${isHost ? '(Anfitrión)' : '(Invitado)'}`;
                 document.getElementById('room-display-3d').textContent = `Sala: ${roomId}`;
                 
+                // Resetear estado de selección de color al entrar
+                colorSelectedInRoom = false;
+                document.querySelectorAll('#game-color-picker .color-btn').forEach(b => b.classList.remove('selected'));
+                const statusEl = document.getElementById('color-selection-status');
+                statusEl.textContent = '⚠️ Selecciona un color para habilitar el botón "Listo"';
+                statusEl.style.color = '#ff6666';
+                document.getElementById('btn-host-ready').disabled = true;
+                document.getElementById('btn-ready').disabled = true;
+
+                // Si tiene un color guardado, pre-seleccionarlo para mejor UX
+                const savedColor = localStorage.getItem('ll_color');
+                if (savedColor) {
+                    const savedBtn = document.querySelector(`#game-color-picker .color-btn[data-color="${savedColor}"]`);
+                    if (savedBtn) {
+                        savedBtn.click(); // Esto dispara el evento, actualiza Firebase y habilita los botones
+                    }
+                }
+                
                 if (isHost) {
                     document.getElementById('host-instruction').style.display = 'block';
                     document.getElementById('btn-place-goal').style.display = 'inline-block';
                     document.getElementById('btn-host-ready').style.display = 'block';
                     document.getElementById('btn-generate').style.display = 'block';
                     document.getElementById('btn-generate').disabled = true;
-                    document.getElementById('status').textContent = '✏️ Dibuja el laberinto y coloca la META. Luego presiona "Listo".';
+                    document.getElementById('status').textContent = '✏️ Dibuja el laberinto, elige tu color y coloca la META. Luego presiona "Listo".';
                     
                     document.getElementById('btn-host-ready').onclick = () => {
+                        if (!colorSelectedInRoom) { alert("Por favor, selecciona un color primero."); return; }
                         update(ref(db, `rooms/${roomId}/players/${playerId}`), { ready: true });
                     };
                     document.getElementById('btn-generate').onclick = () => { generateGame(); };
@@ -356,9 +393,10 @@
                     document.getElementById('guest-instruction').style.display = 'block';
                     document.getElementById('btn-ready').style.display = 'block';
                     document.getElementById('settings-panel').style.display = 'none';
-                    document.getElementById('status').textContent = 'Presiona "Listo" cuando estés preparado';
+                    document.getElementById('status').textContent = 'Elige tu color y presiona "Listo" cuando estés preparado';
                     
                     document.getElementById('btn-ready').onclick = () => {
+                        if (!colorSelectedInRoom) { alert("Por favor, selecciona un color primero."); return; }
                         update(ref(db, `rooms/${roomId}/players/${playerId}`), { ready: true });
                     };
                 }
@@ -424,11 +462,10 @@
                                 document.getElementById('status').textContent = `Esperando a que los ${maxPlayers} jugadores estén listos (${readyCount}/${maxPlayers})...`;
                             }
                         } else {
-                            btnHostReady.disabled = false;
+                            btnHostReady.disabled = false; // Se controla por colorSelectedInRoom en el onclick
                             btnHostReady.textContent = '✅ Estoy listo para generar';
                             btnHostReady.style.background = '#28a745';
                             btnGenerate.disabled = true;
-                            document.getElementById('status').textContent = '✏️ Dibuja el laberinto y coloca la META. Luego presiona "Listo".';
                         }
                     }
                     
@@ -528,15 +565,11 @@
             }
             Object.values(players).forEach((p, idx) => {
                 if (p.startX !== undefined && p.startZ !== undefined) {
-                    const colorMap = {
-                        '0xff0000': '#ff0000', '0x0066ff': '#0066ff', '0x00ff00': '#00ff00',
-                        '0xffff00': '#ffff00', '0xff00ff': '#ff00ff', '0xff8800': '#ff8800', '0xffffff': '#ffffff'
-                    };
-                    ctx.fillStyle = colorMap[p.color] || '#ffffff';
+                    ctx.fillStyle = p.color || '#ffffff';
                     ctx.beginPath();
                     ctx.arc(p.startX * CELL_PX + CELL_PX/2, p.startZ * CELL_PX + CELL_PX/2, CELL_PX * 0.3, 0, Math.PI * 2);
                     ctx.fill();
-                    ctx.fillStyle = 'white'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillStyle = 'black'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                     ctx.fillText(`J${idx + 1}`, p.startX * CELL_PX + CELL_PX/2, p.startZ * CELL_PX + CELL_PX/2);
                 }
             });
@@ -660,7 +693,6 @@
                 updates[`players/${pid}/startZ`] = pos.y;
                 updates[`players/${pid}/x`] = pos.x;
                 updates[`players/${pid}/z`] = pos.y;
-                // En modo batalla, TODOS tienen stick
                 updates[`players/${pid}/hasStick`] = isBattleRoyale ? true : (idx === 0);
             });
             
@@ -693,7 +725,6 @@
             gameCanvas = document.createElement('canvas');
             gameCanvas.style.cssText = 'width:100%;height:100%;display:block;';
             gc.appendChild(gameCanvas);
-            // MEJORA 2: D-pad elevado a bottom:80px para que no se pierda en el borde inferior
             gc.insertAdjacentHTML('beforeend', '<div style="position:absolute;bottom:80px;left:30px;width:180px;height:180px;"><button class="dpad-btn" data-dir="up" style="top:0;left:60px;">⬆️</button><button class="dpad-btn" data-dir="left" style="top:60px;left:0;">⬅️</button><button class="dpad-btn" data-dir="right" style="top:60px;left:120px;">➡️</button><button class="dpad-btn" data-dir="down" style="top:120px;left:60px;">⬇️</button></div><div id="joystick-zone"></div>');
 
             scene = new THREE.Scene();
@@ -752,16 +783,8 @@
             
             document.querySelectorAll('.dpad-btn').forEach(btn => {
                 const dir = btn.dataset.dir;
-                
-                const startMove = (e) => {
-                    if (e.cancelable) e.preventDefault();
-                    window.gameKeys[dir] = true;
-                };
-                
-                const stopMove = (e) => {
-                    if (e.cancelable) e.preventDefault();
-                    window.gameKeys[dir] = false;
-                };
+                const startMove = (e) => { if (e.cancelable) e.preventDefault(); window.gameKeys[dir] = true; };
+                const stopMove = (e) => { if (e.cancelable) e.preventDefault(); window.gameKeys[dir] = false; };
 
                 btn.addEventListener('touchstart', startMove, { passive: false });
                 btn.addEventListener('touchend', stopMove);
@@ -774,34 +797,20 @@
             setTimeout(() => {
                 const joystickZone = document.getElementById('joystick-zone');
                 if (joystickZone && typeof nipplejs !== 'undefined') {
-                    joystick = nipplejs.create({
-                        zone: joystickZone,
-                        mode: 'dynamic',
-                        size: 120,
-                        color: 'white'
-                    });
+                    joystick = nipplejs.create({ zone: joystickZone, mode: 'dynamic', size: 120, color: 'white' });
                     joystick.on('move', (evt, data) => {
-                        if (data.vector) {
-                            joystickVector.x = data.vector.x;
-                            joystickVector.y = data.vector.y;
-                        }
+                        if (data.vector) { joystickVector.x = data.vector.x; joystickVector.y = data.vector.y; }
                     });
-                    joystick.on('end', () => {
-                        joystickVector.x = 0;
-                        joystickVector.y = 0;
-                    });
-                    console.log("✅ Joystick inicializado");
+                    joystick.on('end', () => { joystickVector.x = 0; joystickVector.y = 0; });
                 }
             }, 500);
             
             document.getElementById('btn-exit').onclick = () => { location.reload(); };
-            
             document.getElementById('btn-map').onclick = () => {
                 mapVisible = !mapVisible;
                 document.getElementById('minimap').style.display = mapVisible ? 'block' : 'none';
                 document.getElementById('btn-map').textContent = mapVisible ? '🗺️ Ocultar' : '🗺️ Mapa';
             };
-            
             document.getElementById('btn-sound').onclick = () => {
                 soundOn = !soundOn;
                 document.getElementById('btn-sound').textContent = soundOn ? '🔊 Sonido ON' : '🔇 Sonido OFF';
@@ -820,16 +829,9 @@
                 if (targetId) {
                     const target = players[targetId];
                     if (battleRoyaleMode) {
-                        update(ref(db, `rooms/${roomId}/players/${targetId}`), { 
-                            x: target.startX, 
-                            z: target.startZ 
-                        });
+                        update(ref(db, `rooms/${roomId}/players/${targetId}`), { x: target.startX, z: target.startZ });
                     } else {
-                        update(ref(db, `rooms/${roomId}/players/${targetId}`), { 
-                            x: target.startX, 
-                            z: target.startZ, 
-                            hasStick: false 
-                        });
+                        update(ref(db, `rooms/${roomId}/players/${targetId}`), { x: target.startX, z: target.startZ, hasStick: false });
                     }
                     playSound('tag');
                 }
@@ -837,12 +839,9 @@
             
             function onResize() {
                 if (!camera || !renderer) return;
-                const width = window.innerWidth;
-                const height = window.innerHeight;
-                camera.aspect = width / height;
+                camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
-                renderer.setSize(width, height);
-                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.setSize(window.innerWidth, window.innerHeight);
             }
             window.addEventListener('resize', onResize);
             window.addEventListener('orientationchange', () => { setTimeout(onResize, 200); });
@@ -850,19 +849,18 @@
 
         function createAvatar(pid, colorHex, startX, startZ, currentPlayers) {
             const group = new THREE.Group();
-            const color = parseInt(colorHex);
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshStandardMaterial({ color }));
+            // Three.js acepta nativamente strings hexadecimales como "#ff0000"
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshStandardMaterial({ color: colorHex }));
             head.position.y = 1.2;
-            const body = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.0, 16), new THREE.MeshStandardMaterial({ color }));
+            const body = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.0, 16), new THREE.MeshStandardMaterial({ color: colorHex }));
             body.position.y = 0.5; body.rotation.x = Math.PI;
             group.add(head, body);
             
             const hasStick = battleRoyaleMode ? true : (currentPlayers[pid] && currentPlayers[pid].hasStick);
             if (hasStick) {
-                // MEJORA 3: Stick con el color del jugador y propiedad emisiva para que brille
                 const stickMat = new THREE.MeshStandardMaterial({ 
-                    color: color, 
-                    emissive: color, 
+                    color: colorHex, 
+                    emissive: colorHex, 
                     emissiveIntensity: 0.8 
                 });
                 const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.2, 8), stickMat);
@@ -870,8 +868,7 @@
                 stick.rotation.z = -0.3;
                 group.add(stick);
                 
-                // MEJORA 3: Luz puntual adherida al stick para iluminar el entorno con el color del jugador
-                const stickLight = new THREE.PointLight(color, 0.6, 5);
+                const stickLight = new THREE.PointLight(colorHex, 0.6, 5);
                 stickLight.position.set(0.4, 1.4, 0.4);
                 group.add(stickLight);
             }
@@ -935,17 +932,12 @@
                 mctx.fill();
             }
             
-            const colorMap = {
-                '0xff0000': '#ff0000', '0x0066ff': '#0066ff', '0x00ff00': '#00ff00',
-                '0xffff00': '#ffff00', '0xff00ff': '#ff00ff', '0xff8800': '#ff8800', '0xffffff': '#ffffff'
-            };
-            
-            Object.keys(players).forEach((pid, idx) => {
+            Object.keys(players).forEach((pid) => {
                 const p = players[pid];
                 const px = pid === playerId ? localPlayer.x : p.x;
                 const pz = pid === playerId ? localPlayer.z : p.z;
                 
-                mctx.fillStyle = colorMap[p.color] || '#ffffff';
+                mctx.fillStyle = p.color || '#ffffff';
                 mctx.beginPath();
                 mctx.arc(px * cellPx + cellPx/2, pz * cellPx + cellPx/2, cellPx * 0.7, 0, Math.PI * 2);
                 mctx.fill();
