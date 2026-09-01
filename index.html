@@ -54,7 +54,6 @@
             z-index: 10001; cursor: pointer; animation: pulse-tag 1s infinite;
         }
         @keyframes pulse-tag { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        
         .room-info { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; font-size: 14px; z-index: 10001; }
     </style>
 </head>
@@ -66,9 +65,7 @@
         <div id="lobby-screen">
             <h2>🚪 Sala de Espera</h2>
             <input type="text" id="room-input" class="lobby-input" placeholder="Código de sala (ej: LAB-123)" maxlength="10">
-            <div style="margin: 10px 0;">
-                <button class="lobby-btn" onclick="generateRoomCode()">🎲 Generar Código</button>
-            </div>
+            <div style="margin: 10px 0;"><button class="lobby-btn" onclick="generateRoomCode()">🎲 Generar Código</button></div>
             <p style="margin: 15px 0; color: #aaa;">Elige tu color:</p>
             <div class="color-picker" id="color-picker">
                 <div class="color-btn selected" style="background: #ff0000;" data-color="0xff0000"></div>
@@ -134,7 +131,7 @@
             <div class="victory-content">
                 <h1>🏆 ¡GANASTE!</h1>
                 <p id="final-time"></p>
-                <button id="btn-continue">Seguir explorando</button>
+                <button id="btn-continue" onclick="location.reload()">Jugar de nuevo</button>
             </div>
         </div>
     </div>
@@ -157,28 +154,70 @@
         try {
             const app = initializeApp(firebaseConfig);
             db = getDatabase(app);
-            console.log("✅ Firebase inicializado correctamente");
+            console.log("✅ Firebase inicializado");
         } catch (error) {
-            console.error("❌ Error al inicializar Firebase:", error);
-            alert("ERROR CRÍTICO: No se pudo conectar a Firebase.");
+            console.error("❌ Error Firebase:", error);
+            alert("ERROR: No se pudo conectar a Firebase.");
+        }
+
+        // --- MOTOR DE AUDIO SIMPLE ---
+        let audioCtx;
+        let soundOn = true;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+        function playSound(type) {
+            if (!soundOn || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            if (type === 'step') {
+                osc.frequency.value = 80 + Math.random() * 40;
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+            } else if (type === 'win') {
+                osc.frequency.value = 523;
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'tag') {
+                osc.type = 'sawtooth';
+                osc.frequency.value = 200;
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            }
+        }
+
+        // --- BLINDAJE DE DATOS ---
+        function ensureGrid2D(rawGrid) {
+            const newGrid = Array(21).fill(null).map(() => Array(21).fill(0));
+            if (!rawGrid) return newGrid;
+            for (let y = 0; y < 21; y++) {
+                for (let x = 0; x < 21; x++) {
+                    if (rawGrid[y] !== undefined && rawGrid[y][x] !== undefined) {
+                        newGrid[y][x] = rawGrid[y][x];
+                    }
+                }
+            }
+            return newGrid;
         }
 
         let playerId = localStorage.getItem('ll_playerId') || Math.random().toString(36).substr(2, 9);
         localStorage.setItem('ll_playerId', playerId);
         
-        let roomId = "";
-        let isHost = false;
+        let roomId = "", isHost = false;
         let myColor = localStorage.getItem('ll_color') || "0xff0000";
-        
         let grid = Array(21).fill(null).map(() => Array(21).fill(0));
-        let myStart = null;
-        let goal = null;
-        let gameStarted = false;
-        let gameWon = false;
-        
+        let myStart = null, goal = null, gameStarted = false, gameWon = false;
         let players = {};
         let localPlayer = { x: 0, z: 0, yaw: 0, pitch: 0, speed: 3.0, rotSpeed: 2.0, hasStick: false };
-        let lastDbUpdate = 0;
+        let lastDbUpdate = 0, stepCooldown = 0;
 
         window.gameKeys = { up: false, down: false, left: false, right: false };
 
@@ -187,9 +226,7 @@
         const roomInput = document.getElementById('room-input');
         const lobbyStatus = document.getElementById('lobby-status');
 
-        window.generateRoomCode = () => {
-            roomInput.value = "LAB-" + Math.random().toString(36).substr(2, 4).toUpperCase();
-        };
+        window.generateRoomCode = () => { roomInput.value = "LAB-" + Math.random().toString(36).substr(2, 4).toUpperCase(); };
 
         document.querySelectorAll('.color-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -199,16 +236,16 @@
                 localStorage.setItem('ll_color', myColor);
             });
             if (btn.dataset.color === myColor) btn.classList.add('selected');
-            else btn.classList.remove('selected');
         });
 
         window.joinRoom = async () => {
+            initAudio(); // Desbloquear audio con interacción del usuario
             if (!db) { alert("Firebase no se inicializó."); return; }
             try {
                 roomId = roomInput.value.trim().toUpperCase();
                 if (!roomId) { alert("Ingresa un código de sala"); return; }
                 
-                lobbyStatus.textContent = "Conectando a Firebase...";
+                lobbyStatus.textContent = "Conectando...";
                 document.getElementById('join-btn').disabled = true;
 
                 const roomRef = ref(db, `rooms/${roomId}`);
@@ -217,17 +254,15 @@
                 if (!snapshot.exists()) {
                     isHost = true;
                     await set(roomRef, {
-                        host: playerId,
-                        grid: grid,
-                        goal: null,
+                        host: playerId, grid: grid, goal: null,
                         settings: { thickness: 1.0, height: 2.0, material: 'stone', ambient: 0.5, playerLight: 1.5, lightDist: 15 },
                         gameStarted: false,
-                        players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: true } }
+                        players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 1, startZ: 1, hasStick: true } }
                     });
                 } else {
                     isHost = false;
                     await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
-                        color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: false
+                        color: myColor, x: 0, z: 0, startX: 19, startZ: 19, hasStick: false
                     });
                     onDisconnect(ref(db, `rooms/${roomId}/players/${playerId}`)).remove();
                 }
@@ -251,7 +286,7 @@
                 initCanvas();
                 listenToRoom();
             } catch (error) {
-                console.error("❌ Error al unirse:", error);
+                console.error("❌ Error:", error);
                 alert("ERROR DE CONEXIÓN: " + error.message);
                 document.getElementById('join-btn').disabled = false;
             }
@@ -262,8 +297,8 @@
                 const data = snapshot.val();
                 if (!data) return;
                 
-                // Actualizamos variables globales por si acaso
-                grid = data.grid || grid;
+                // BLINDAJE: Convertir siempre a 2D array
+                grid = ensureGrid2D(data.grid);
                 goal = data.goal;
                 players = data.players || {};
                 
@@ -278,10 +313,9 @@
                     }
                 }
                 
-                // BLINDAJE: Pasamos los datos DIRECTAMENTE para evitar condiciones de carrera
                 if (data.gameStarted && !gameStarted) {
-                    console.log("🚀 Iniciando juego con datos directos de Firebase");
-                    start3DGame(data.settings, data.grid, data.goal, data.players);
+                    console.log("🚀 Iniciando 3D con datos blindados");
+                    start3DGame(data.settings, grid, goal, players);
                 }
                 
                 redrawCanvas();
@@ -298,13 +332,10 @@
             }
         }
 
-        let isDrawing = false;
-        let currentColor = 'black';
-        let placingMode = null;
+        let isDrawing = false, currentColor = 'black', placingMode = null;
         const canvas = document.getElementById('draw-canvas');
         const ctx = canvas.getContext('2d');
-        const GRID_SIZE = 21;
-        const CELL_PX = 20;
+        const GRID_SIZE = 21, CELL_PX = 20;
 
         function initCanvas() {
             ctx.fillStyle = 'white';
@@ -320,8 +351,7 @@
 
         function getPos(e) {
             const rect = canvas.getBoundingClientRect();
-            const sx = canvas.width / rect.width;
-            const sy = canvas.height / rect.height;
+            const sx = canvas.width / rect.width, sy = canvas.height / rect.height;
             const cx = e.touches ? e.touches[0].clientX : e.clientX;
             const cy = e.touches ? e.touches[0].clientY : e.clientY;
             return { x: (cx - rect.left) * sx, y: (cy - rect.top) * sy };
@@ -331,8 +361,7 @@
             if (!isDrawing || gameStarted) return;
             e.preventDefault();
             const pos = getPos(e);
-            const gx = Math.floor(pos.x / CELL_PX);
-            const gy = Math.floor(pos.y / CELL_PX);
+            const gx = Math.floor(pos.x / CELL_PX), gy = Math.floor(pos.y / CELL_PX);
             
             if (gx >= 0 && gx < GRID_SIZE && gy >= 0 && gy < GRID_SIZE) {
                 if (placingMode === 'start') {
@@ -363,20 +392,16 @@
                 }
             }
             if (myStart) {
-                ctx.fillStyle = '#dc3545';
-                ctx.beginPath();
+                ctx.fillStyle = '#dc3545'; ctx.beginPath();
                 ctx.arc(myStart.x * CELL_PX + CELL_PX/2, myStart.y * CELL_PX + CELL_PX/2, CELL_PX * 0.4, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = 'white'; ctx.font = 'bold 12px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fill(); ctx.fillStyle = 'white'; ctx.font = 'bold 12px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                 ctx.fillText('S', myStart.x * CELL_PX + CELL_PX/2, myStart.y * CELL_PX + CELL_PX/2);
             }
             if (goal) {
-                ctx.fillStyle = '#28a745';
-                ctx.beginPath();
+                ctx.fillStyle = '#28a745'; ctx.beginPath();
                 const cx = goal.x * CELL_PX + CELL_PX/2, cy = goal.y * CELL_PX + CELL_PX/2;
                 for (let i = 0; i < 5; i++) {
-                    const angle = (i * 4 * Math.PI / 5) - Math.PI / 2;
-                    const r = CELL_PX * 0.4;
+                    const angle = (i * 4 * Math.PI / 5) - Math.PI / 2, r = CELL_PX * 0.4;
                     const x = cx + r * Math.cos(angle), y = cy + r * Math.sin(angle);
                     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
                 }
@@ -398,8 +423,7 @@
         document.getElementById('btn-place-goal').onclick = () => { if(isHost) { placingMode = 'goal'; document.getElementById('status').textContent = '🎯 Toca el canvas para colocar la META'; }};
         
         ['thickness','height','ambient','player-light','light-distance'].forEach(id => {
-            const slider = document.getElementById(id + '-slider');
-            const val = document.getElementById(id + '-val');
+            const slider = document.getElementById(id + '-slider'), val = document.getElementById(id + '-val');
             if (slider && val) {
                 slider.oninput = () => {
                     let v = slider.value;
@@ -412,9 +436,7 @@
 
         document.getElementById('btn-generate').onclick = () => {
             if (!goal) { alert("El anfitrión debe colocar la meta"); return; }
-            // Asegurar bordes
             for (let i = 0; i < GRID_SIZE; i++) { grid[0][i] = 1; grid[GRID_SIZE-1][i] = 1; grid[i][0] = 1; grid[i][GRID_SIZE-1] = 1; }
-            
             const settings = {
                 thickness: parseFloat(document.getElementById('thickness-slider').value),
                 height: parseFloat(document.getElementById('height-slider').value),
@@ -423,37 +445,25 @@
                 playerLight: parseFloat(document.getElementById('player-light-slider').value),
                 lightDist: parseInt(document.getElementById('light-distance-slider').value)
             };
-            
             console.log("🚀 Anfitrión generando juego...");
             update(ref(db, `rooms/${roomId}`), { grid: grid, goal: goal, settings: settings, gameStarted: true });
         };
 
         let scene, camera, renderer, playerAvatars = {};
 
-        // BLINDAJE: Recibe los datos directamente de Firebase
         function start3DGame(settings, safeGrid, safeGoal, safePlayers) {
             gameStarted = true;
             gameScreen.style.display = 'none';
             document.getElementById('game-container').style.display = 'block';
             
-            // Usamos los datos seguros pasados como argumento
-            const currentGrid = safeGrid || grid;
-            const currentGoal = safeGoal || goal;
-            const currentPlayers = safePlayers || players;
-            
-            const p = currentPlayers[playerId];
-            if (!p) {
-                console.error("❌ Jugador no encontrado en la sala");
-                alert("Error: No se encontraron datos del jugador. Recarga la página.");
-                return;
-            }
+            const p = safePlayers[playerId];
+            if (!p) { alert("Error: Jugador no encontrado."); return; }
             
             localPlayer.x = (p.startX !== undefined ? p.startX : 1) * 1.0;
             localPlayer.z = (p.startZ !== undefined ? p.startZ : 1) * 1.0;
             localPlayer.hasStick = p.hasStick || false;
             
-            console.log("✅ Iniciando 3D. Grid tamaño:", currentGrid.length, "Meta:", currentGoal);
-            initThreeJS(settings, currentGrid, currentGoal, currentPlayers);
+            initThreeJS(settings, safeGrid, safeGoal, safePlayers);
             animate();
         }
 
@@ -473,8 +483,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             
             scene.add(new THREE.AmbientLight(0x404040, settings.ambient));
-            const pLight = new THREE.PointLight(0xffffcc, settings.playerLight, settings.lightDist);
-            scene.add(pLight);
+            scene.add(new THREE.PointLight(0xffffcc, settings.playerLight, settings.lightDist));
             
             const matConfigs = {
                 stone: { color: 0x808080, roughness: 0.9 }, brick: { color: 0xb74d4d, roughness: 0.8 },
@@ -483,18 +492,14 @@
                 lava: { color: 0xff3300, roughness: 0.5, emissive: 0x550000 }, snow: { color: 0xffffff, roughness: 0.9 }
             };
             const wallMat = new THREE.MeshStandardMaterial(matConfigs[settings.material] || matConfigs.stone);
-            
-            // BLINDAJE: Aseguramos que currentGrid sea un array válido
-            const flatGrid = Array.isArray(currentGrid) ? currentGrid.flat() : [];
-            const wc = flatGrid.filter(c => c === 1).length;
-            
+            const wc = currentGrid.flat().filter(c => c === 1).length;
             const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1.0 * settings.thickness, settings.height, 1.0 * settings.thickness), wallMat, wc > 0 ? wc : 1);
             const dummy = new THREE.Object3D();
             let idx = 0;
             
             for (let y = 0; y < 21; y++) {
                 for (let x = 0; x < 21; x++) {
-                    if (currentGrid[y] && currentGrid[y][x] === 1) {
+                    if (currentGrid[y][x] === 1) {
                         dummy.position.set(x, settings.height / 2, y);
                         dummy.updateMatrix();
                         walls.setMatrixAt(idx++, dummy.matrix);
@@ -504,8 +509,7 @@
             scene.add(walls);
             
             const floor = new THREE.Mesh(new THREE.PlaneGeometry(21, 21), new THREE.MeshStandardMaterial({ color: 0x3a3a3a }));
-            floor.rotation.x = -Math.PI / 2;
-            floor.position.set(10, 0, 10);
+            floor.rotation.x = -Math.PI / 2; floor.position.set(10, 0, 10);
             scene.add(floor);
             
             if (currentGoal) {
@@ -531,22 +535,35 @@
                 btn.addEventListener('mouseup', () => window.gameKeys[dir] = false);
             });
             
+            // --- BOTONES DE UI RESTAURADOS ---
             document.getElementById('btn-exit').onclick = () => { location.reload(); };
+            
+            let mapVisible = false;
+            document.getElementById('btn-map').onclick = () => {
+                mapVisible = !mapVisible;
+                document.getElementById('minimap').style.display = mapVisible ? 'block' : 'none';
+                document.getElementById('btn-map').textContent = mapVisible ? '🗺️ Ocultar' : '🗺️ Mapa';
+            };
+            
+            document.getElementById('btn-sound').onclick = () => {
+                soundOn = !soundOn;
+                document.getElementById('btn-sound').textContent = soundOn ? '🔊 Sonido ON' : '🔇 Sonido OFF';
+            };
             
             const tagBtn = document.getElementById('tag-btn');
             tagBtn.onclick = () => {
                 if (!localPlayer.hasStick) return;
                 let targetId = null;
-                Object.keys(currentPlayers).forEach(pid => {
+                Object.keys(players).forEach(pid => {
                     if (pid === playerId) return;
-                    const p = currentPlayers[pid];
+                    const p = players[pid];
                     const dist = Math.sqrt((localPlayer.x - p.x)**2 + (localPlayer.z - p.z)**2);
                     if (dist < 1.5) targetId = pid;
                 });
-                
                 if (targetId) {
-                    const target = currentPlayers[targetId];
+                    const target = players[targetId];
                     update(ref(db, `rooms/${roomId}/players/${targetId}`), { x: target.startX, z: target.startZ, hasStick: false });
+                    playSound('tag');
                 }
             };
         }
@@ -562,11 +579,9 @@
             
             if (currentPlayers[pid] && currentPlayers[pid].hasStick) {
                 const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.2, 8), new THREE.MeshStandardMaterial({ color: 0xffff00 }));
-                stick.position.set(0.4, 0.8, 0.4);
-                stick.rotation.z = -0.3;
+                stick.position.set(0.4, 0.8, 0.4); stick.rotation.z = -0.3;
                 group.add(stick);
             }
-            
             group.position.set(startX, 0, startZ);
             scene.add(group);
             playerAvatars[pid] = group;
@@ -575,9 +590,7 @@
         function updateOtherPlayers3D() {
             Object.keys(players).forEach(pid => {
                 const p = players[pid];
-                if (!playerAvatars[pid]) {
-                    createAvatar(pid, p.color, p.startX, p.startZ, players);
-                }
+                if (!playerAvatars[pid]) createAvatar(pid, p.color, p.startX, p.startZ, players);
                 if (pid !== playerId) {
                     playerAvatars[pid].position.set(p.x, 0, p.z);
                 } else {
@@ -585,20 +598,15 @@
                     camera.position.set(localPlayer.x, 1.5, localPlayer.z);
                 }
             });
-            
             Object.keys(playerAvatars).forEach(pid => {
-                if (!players[pid]) {
-                    scene.remove(playerAvatars[pid]);
-                    delete playerAvatars[pid];
-                }
+                if (!players[pid]) { scene.remove(playerAvatars[pid]); delete playerAvatars[pid]; }
             });
             
             let nearSomeone = false;
             if (localPlayer.hasStick) {
                 Object.keys(players).forEach(pid => {
                     if (pid === playerId) return;
-                    const p = players[pid];
-                    const dist = Math.sqrt((localPlayer.x - p.x)**2 + (localPlayer.z - p.z)**2);
+                    const dist = Math.sqrt((localPlayer.x - players[pid].x)**2 + (localPlayer.z - players[pid].z)**2);
                     if (dist < 1.5) nearSomeone = true;
                 });
             }
@@ -623,12 +631,14 @@
             if (window.gameKeys.right) { mx += rgt.x; mz += rgt.z; }
             
             const len = Math.sqrt(mx*mx + mz*mz);
+            let isMoving = false;
             if (len > 0) {
                 mx = (mx / len) * localPlayer.speed * dt;
                 mz = (mz / len) * localPlayer.speed * dt;
+                isMoving = true;
             }
             
-            // BLINDAJE: Verificamos que grid exista antes de chequear colisiones
+            // BLINDAJE DE COLISIONES
             if (grid && grid[0]) {
                 const gx = Math.round((localPlayer.x + mx) / 1.0);
                 const gz = Math.round((localPlayer.z + mz) / 1.0);
@@ -638,11 +648,17 @@
                 }
             }
             
+            if (isMoving) {
+                stepCooldown -= dt;
+                if (stepCooldown <= 0) { playSound('step'); stepCooldown = 0.35; }
+            }
+            
             syncPlayerPosition();
             updateOtherPlayers3D();
             
             if (goal && Math.sqrt((localPlayer.x - goal.x)**2 + (localPlayer.z - goal.y)**2) < 0.6) {
                 gameWon = true;
+                playSound('win');
                 document.getElementById('victory-overlay').style.display = 'flex';
             }
             
@@ -651,4 +667,3 @@
     </script>
 </body>
 </html>
-
