@@ -900,15 +900,31 @@
                 isMoving = true;
             }
             
-            // Colisiones
+            // Colisiones mejoradas con margen de seguridad
             if (grid && grid[0]) {
-                const gx = Math.round((localPlayer.x + mx) / 1.0);
-                const gz = Math.round((localPlayer.z + mz) / 1.0);
-                if (gx >= 0 && gx < 21 && gz >= 0 && gz < 21 && grid[gz][gx] === 0) {
-                    localPlayer.x += mx;
-                    localPlayer.z += mz;
-                }
+                const margin = 0.3;
+                const newX = localPlayer.x + mx;
+                const newZ = localPlayer.z + mz;
+                
+                // Verificar X por separado
+                const gxNew = Math.round(newX);
+                const gzCurrent = Math.round(localPlayer.z);
+                const canMoveX = (gxNew >= 0 && gxNew < 21 && gzCurrent >= 0 && gzCurrent < 21 && 
+                                  grid[gzCurrent][gxNew] === 0 &&
+                                  Math.abs(newX - gxNew) > margin);
+                
+                // Verificar Z por separado
+                const gzNew = Math.round(newZ);
+                const gxCurrent = Math.round(localPlayer.x);
+                const canMoveZ = (gzNew >= 0 && gzNew < 21 && gxCurrent >= 0 && gxCurrent < 21 && 
+                                  grid[gzNew][gxCurrent] === 0 &&
+                                  Math.abs(newZ - gzNew) > margin);
+                
+                // Mover en cada eje independientemente (permite deslizarse contra paredes)
+                if (canMoveX) localPlayer.x = newX;
+                if (canMoveZ) localPlayer.z = newZ;
             }
+
             
             if (isMoving) {
                 stepCooldown -= dt;
