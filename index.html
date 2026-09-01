@@ -31,6 +31,7 @@
         .setting-row input[type="range"] { width: 100%; }
         .setting-row select { width: 100%; padding: 8px; font-size: 14px; background: #222; color: white; border: 1px solid #555; border-radius: 5px; }
         .generate-btn { padding: 15px 30px; font-size: 18px; background: #4CAF50; color: white; border: none; border-radius: 5px; display: block; margin: 20px auto; cursor: pointer; }
+        .generate-btn:disabled { background: #555; cursor: not-allowed; opacity: 0.6; }
         #status { text-align: center; margin: 10px 0; color: #aaa; font-weight: bold; }
         #marker-status { margin-top: 5px; font-size: 12px; color: #aaa; }
         
@@ -100,8 +101,13 @@
             <h2>🖌️ Editor del Laberinto</h2>
             <p id="host-instruction" style="text-align: center; color: #4CAF50; font-weight: bold; display: none;">👑 Eres el ANFITRIÓN. Dibuja el laberinto y coloca la META.</p>
             <p id="guest-instruction" style="text-align: center; color: #0066ff; font-weight: bold; display: none;">👥 Eres INVITADO. Presiona "Listo" cuando estés preparado.</p>
-            <button id="btn-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin-top: 15px; background: #28a745; display: none;">✅ Listo para jugar</button>
-            <p id="players-ready-status" style="margin-top: 15px; color: #4CAF50; font-weight: bold;"></p>
+            
+            <!-- Botón de listo para el anfitrión -->
+            <button id="btn-host-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 15px auto; background: #28a745; display: none;">✅ Estoy listo para generar</button>
+            <!-- Botón de listo para el invitado -->
+            <button id="btn-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 15px auto; background: #28a745; display: none;">✅ Listo para jugar</button>
+            
+            <p id="players-ready-status" style="margin-top: 15px; color: #4CAF50; font-weight: bold; text-align: center;"></p>
             
             <div class="btn-row">
                 <button id="btn-fill-white" style="background: white; color: black;">⬜ Fondo blanco</button>
@@ -130,8 +136,8 @@
                 <div class="setting-row"><label>📡 Alcance: <span id="light-distance-val">25m</span></label><input type="range" id="light-distance-slider" min="5" max="50" step="5" value="25"></div>
             </div>
             
-            <button id="btn-generate" class="generate-btn" style="display: none;">🎮 Generar 3D e Iniciar</button>
-            <div id="status">Esperando al anfitrión...</div>
+            <button id="btn-generate" class="generate-btn" style="display: none;" disabled>🎮 Generar 3D e Iniciar</button>
+            <div id="status" style="margin-top: 10px;">Esperando...</div>
         </div>
     </div>
     
@@ -261,7 +267,6 @@
         let localPlayer = { x: 0, z: 0, yaw: 0, pitch: 0, speed: 3.0, rotSpeed: 2.0, hasStick: false };
         let lastDbUpdate = 0, stepCooldown = 0;
         let joystickVector = { x: 0, y: 0 };
-        let mapVisible = false;
 
         window.gameKeys = { up: false, down: false, left: false, right: false };
 
@@ -324,9 +329,14 @@
                 if (isHost) {
                     document.getElementById('host-instruction').style.display = 'block';
                     document.getElementById('btn-place-goal').style.display = 'inline-block';
+                    document.getElementById('btn-host-ready').style.display = 'block';
                     document.getElementById('btn-generate').style.display = 'block';
-                    document.getElementById('status').textContent = '✏️ Modo: dibujar negro (paredes)';
-                    document.getElementById('players-ready-status').textContent = `👥 Jugadores listos: 1/${maxPlayers}`;
+                    document.getElementById('btn-generate').disabled = true; // Deshabilitado hasta que el anfitrión esté listo
+                    document.getElementById('status').textContent = '✏️ Dibuja el laberinto y coloca la META. Luego presiona "Listo".';
+                    
+                    document.getElementById('btn-host-ready').onclick = () => {
+                        update(ref(db, `rooms/${roomId}/players/${playerId}`), { ready: true });
+                    };
                     document.getElementById('btn-generate').onclick = () => { generateGame(); };
                 } else {
                     document.getElementById('guest-instruction').style.display = 'block';
@@ -336,10 +346,6 @@
                     
                     document.getElementById('btn-ready').onclick = () => {
                         update(ref(db, `rooms/${roomId}/players/${playerId}`), { ready: true });
-                        document.getElementById('btn-ready').disabled = true;
-                        document.getElementById('btn-ready').textContent = '✅ ¡Listo!';
-                        document.getElementById('btn-ready').style.background = '#555';
-                        document.getElementById('status').textContent = 'Esperando a que el anfitrión inicie la partida...';
                     };
                 }
                 
@@ -353,7 +359,6 @@
         };
 
         function listenToRoom() {
-            console.log("🔍 Iniciando listener de sala...");
             onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
@@ -370,13 +375,45 @@
                     }
                 }
                 
-                // Actualizar estado de jugadores listos en tiempo real
+                // Sincronizar UI de "Listo" en tiempo real
                 if (!gameStarted) {
                     const totalPlayers = Object.keys(players).length;
                     const readyCount = Object.values(players).filter(p => p.ready === true).length;
                     const statusEl = document.getElementById('players-ready-status');
                     if (statusEl) {
                         statusEl.textContent = `👥 Jugadores listos: ${readyCount}/${totalPlayers}`;
+                    }
+                    
+                    // Sincronizar estado del botón del anfitrión
+                    if (isHost) {
+                        const hostReady = players[playerId] && players[playerId].ready === true;
+                        const btnHostReady = document.getElementById('btn-host-ready');
+                        const btnGenerate = document.getElementById('btn-generate');
+                        
+                        if (hostReady) {
+                            btnHostReady.disabled = true;
+                            btnHostReady.textContent = '✅ ¡Anfitrión listo!';
+                            btnHostReady.style.background = '#555';
+                            btnGenerate.disabled = false;
+                            document.getElementById('status').textContent = 'Esperando a que los demás jugadores estén listos...';
+                        } else {
+                            btnHostReady.disabled = false;
+                            btnHostReady.textContent = '✅ Estoy listo para generar';
+                            btnHostReady.style.background = '#28a745';
+                            btnGenerate.disabled = true;
+                        }
+                    }
+                    
+                    // Sincronizar estado del botón del invitado
+                    if (!isHost) {
+                        const guestReady = players[playerId] && players[playerId].ready === true;
+                        const btnReady = document.getElementById('btn-ready');
+                        if (guestReady) {
+                            btnReady.disabled = true;
+                            btnReady.textContent = '✅ ¡Listo!';
+                            btnReady.style.background = '#555';
+                            document.getElementById('status').textContent = 'Esperando a que el anfitrión inicie la partida...';
+                        }
                     }
                 }
                 
@@ -560,10 +597,17 @@
             };
             
             const playerIds = Object.keys(roomData.players);
-            const readyPlayers = playerIds.filter(pid => roomData.players[pid].ready === true);
             
-            if (readyPlayers.length < maxPlayers) {
-                alert(`⚠️ No todos los jugadores están listos.\n\nListos: ${readyPlayers.length}/${maxPlayers}\n\nEspera a que todos presionen "Listo".`);
+            // 1. Verificar que todos los jugadores esperados hayan entrado a la sala
+            if (playerIds.length < maxPlayers) {
+                alert(`⚠️ Faltan jugadores por unirse.\n\nConectados: ${playerIds.length}/${maxPlayers}\n\nEspera a que todos entren a la sala.`);
+                return;
+            }
+            
+            // 2. Verificar que TODOS los que están en la sala hayan presionado "Listo"
+            const readyPlayers = playerIds.filter(pid => roomData.players[pid].ready === true);
+            if (readyPlayers.length < playerIds.length) {
+                alert(`⚠️ No todos los jugadores han presionado "Listo".\n\nListos: ${readyPlayers.length}/${playerIds.length}`);
                 return;
             }
             
@@ -688,12 +732,12 @@
                         joystickVector.x = 0;
                         joystickVector.y = 0;
                     });
-                    console.log("✅ Joystick inicializado");
                 }
             }, 500);
             
             document.getElementById('btn-exit').onclick = () => { location.reload(); };
             
+            let mapVisible = false;
             document.getElementById('btn-map').onclick = () => {
                 mapVisible = !mapVisible;
                 document.getElementById('minimap').style.display = mapVisible ? 'block' : 'none';
