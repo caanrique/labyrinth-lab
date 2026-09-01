@@ -55,6 +55,10 @@
         }
         @keyframes pulse-tag { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
         .room-info { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; font-size: 14px; z-index: 10001; }
+        
+        #debug-panel { position: fixed; bottom: 0; left: 0; width: 100%; max-height: 40vh; overflow-y: auto; background: rgba(0,0,0,0.95); color: #0f0; font-family: monospace; font-size: 11px; padding: 10px; z-index: 99999; border-top: 2px solid #0f0; display: none; }
+        #debug-panel.visible { display: block; }
+        #debug-toggle { position: fixed; bottom: 10px; left: 10px; background: #0f0; color: #000; border: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; z-index: 100000; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -136,6 +140,9 @@
         </div>
     </div>
 
+    <button id="debug-toggle">🐛 DEBUG</button>
+    <div id="debug-panel"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.10.1/dist/nipplejs.min.js"></script>
 
@@ -163,21 +170,45 @@
             alert("ERROR: No se pudo conectar a Firebase.");
         }
 
-        // --- MOTOR DE AUDIO SIMPLE ---
+        // --- PANEL DE DEBUG ---
+        const debugPanel = document.getElementById('debug-panel');
+        const debugToggle = document.getElementById('debug-toggle');
+        let debugVisible = false;
+
+        debugToggle.onclick = () => {
+            debugVisible = !debugVisible;
+            debugPanel.classList.toggle('visible', debugVisible);
+            debugToggle.textContent = debugVisible ? '🐛 CERRAR' : '🐛 DEBUG';
+        };
+
+        function debugLog(msg) {
+            const time = new Date().toLocaleTimeString();
+            const line = document.createElement('div');
+            line.textContent = `[${time}] ${msg}`;
+            line.style.borderBottom = '1px solid #333';
+            line.style.padding = '3px 0';
+            debugPanel.appendChild(line);
+            debugPanel.scrollTop = debugPanel.scrollHeight;
+            console.log(msg);
+        }
+
+        const originalLog = console.log;
+        console.log = (...args) => {
+            originalLog.apply(console, args);
+            debugLog(args.join(' '));
+        };
+
         let audioCtx;
         let soundOn = true;
         function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }
         function playSound(type) {
             if (!soundOn || !audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
+            osc.connect(gain); gain.connect(audioCtx.destination);
             if (type === 'step') {
                 osc.frequency.value = 80 + Math.random() * 40;
                 gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
@@ -189,15 +220,13 @@
                 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
                 osc.start(); osc.stop(audioCtx.currentTime + 0.5);
             } else if (type === 'tag') {
-                osc.type = 'sawtooth';
-                osc.frequency.value = 200;
+                osc.type = 'sawtooth'; osc.frequency.value = 200;
                 gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
                 osc.start(); osc.stop(audioCtx.currentTime + 0.3);
             }
         }
 
-        // --- BLINDAJE DE DATOS ---
         function ensureGrid2D(rawGrid) {
             const newGrid = Array(21).fill(null).map(() => Array(21).fill(0));
             if (!rawGrid) return newGrid;
@@ -242,7 +271,7 @@
         });
 
         window.joinRoom = async () => {
-            initAudio(); // Desbloquear audio con interacción del usuario
+            initAudio();
             if (!db) { alert("Firebase no se inicializó."); return; }
             try {
                 roomId = roomInput.value.trim().toUpperCase();
@@ -296,14 +325,27 @@
         };
 
         function listenToRoom() {
+            console.log("🔍 Iniciando listener de sala...");
             onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
                 const data = snapshot.val();
-                if (!data) return;
+                if (!data) {
+                    console.log("⚠️ Listener recibió datos vacíos");
+                    return;
+                }
                 
-                // BLINDAJE: Convertir siempre a 2D array
+                console.log("📥 Listener recibió actualización:", {
+                    gameStarted: data.gameStarted,
+                    hasGrid: !!data.grid,
+                    hasGoal: !!data.goal,
+                    playerCount: Object.keys(data.players || {}).length
+                });
+                
                 grid = ensureGrid2D(data.grid);
                 goal = data.goal;
                 players = data.players || {};
+                
+                const wallsCount = grid.flat().filter(c => c === 1).length;
+                console.log(`🧱 Grid procesado: ${wallsCount} paredes`);
                 
                 if (players[playerId]) {
                     localPlayer.hasStick = players[playerId].hasStick || false;
@@ -317,7 +359,7 @@
                 }
                 
                 if (data.gameStarted && !gameStarted) {
-                    console.log("🚀 Iniciando 3D con datos blindados");
+                    console.log("🚀 gameStarted detectado! Iniciando 3D...");
                     start3DGame(data.settings, grid, goal, players);
                 }
                 
@@ -381,6 +423,7 @@
                     redrawCanvas();
                 } else if (isHost) {
                     grid[gy][gx] = currentColor === 'black' ? 1 : 0;
+                    console.log(`✏️ Dibujando celda (${gx}, ${gy}) = ${grid[gy][gx]}`);
                     update(ref(db, `rooms/${roomId}`), { grid: grid });
                     redrawCanvas();
                 }
@@ -438,44 +481,55 @@
         });
 
         document.getElementById('btn-generate').onclick = async () => {
-    if (!goal) { alert("El anfitrión debe colocar la meta"); return; }
-    
-    // LEER EL GRID DIRECTAMENTE DE FIREBASE (garantiza datos actualizados)
-    console.log("📖 Leyendo grid de Firebase...");
-    const roomSnapshot = await get(ref(db, `rooms/${roomId}`));
-    const roomData = roomSnapshot.val();
-    const currentGrid = ensureGrid2D(roomData.grid);
-    
-    // Asegurar bordes
-    for (let i = 0; i < GRID_SIZE; i++) { 
-        currentGrid[0][i] = 1; 
-        currentGrid[GRID_SIZE-1][i] = 1; 
-        currentGrid[i][0] = 1; 
-        currentGrid[i][GRID_SIZE-1] = 1; 
-    }
-    
-    const settings = {
-        thickness: parseFloat(document.getElementById('thickness-slider').value),
-        height: parseFloat(document.getElementById('height-slider').value),
-        material: document.getElementById('material-select').value,
-        ambient: parseInt(document.getElementById('ambient-slider').value) / 100,
-        playerLight: parseFloat(document.getElementById('player-light-slider').value),
-        lightDist: parseInt(document.getElementById('light-distance-slider').value)
-    };
-    
-    console.log("🚀 Anfitrión generando juego con grid de Firebase...");
-    update(ref(db, `rooms/${roomId}`), { 
-        grid: currentGrid, 
-        goal: goal, 
-        settings: settings, 
-        gameStarted: true 
-    });
-};
-
+            if (!goal) { alert("El anfitrión debe colocar la meta"); return; }
+            
+            console.log("📖 Leyendo grid de Firebase...");
+            const roomSnapshot = await get(ref(db, `rooms/${roomId}`));
+            const roomData = roomSnapshot.val();
+            const currentGrid = ensureGrid2D(roomData.grid);
+            
+            const wallsCount = currentGrid.flat().filter(c => c === 1).length;
+            console.log(`📊 Grid leído de Firebase: ${wallsCount} paredes`);
+            
+            for (let i = 0; i < GRID_SIZE; i++) { 
+                currentGrid[0][i] = 1; 
+                currentGrid[GRID_SIZE-1][i] = 1; 
+                currentGrid[i][0] = 1; 
+                currentGrid[i][GRID_SIZE-1] = 1; 
+            }
+            
+            const settings = {
+                thickness: parseFloat(document.getElementById('thickness-slider').value),
+                height: parseFloat(document.getElementById('height-slider').value),
+                material: document.getElementById('material-select').value,
+                ambient: parseInt(document.getElementById('ambient-slider').value) / 100,
+                playerLight: parseFloat(document.getElementById('player-light-slider').value),
+                lightDist: parseInt(document.getElementById('light-distance-slider').value)
+            };
+            
+            console.log("🚀 Enviando a Firebase:", {
+                walls: currentGrid.flat().filter(c => c === 1).length,
+                goal: goal,
+                gameStarted: true
+            });
+            
+            update(ref(db, `rooms/${roomId}`), { 
+                grid: currentGrid, 
+                goal: goal, 
+                settings: settings, 
+                gameStarted: true 
+            });
+        };
 
         let scene, camera, renderer, playerAvatars = {};
 
         function start3DGame(settings, safeGrid, safeGoal, safePlayers) {
+            console.log("🎮 start3DGame llamado con:", {
+                walls: safeGrid.flat().filter(c => c === 1).length,
+                goal: safeGoal,
+                players: Object.keys(safePlayers).length
+            });
+            
             gameStarted = true;
             gameScreen.style.display = 'none';
             document.getElementById('game-container').style.display = 'block';
@@ -517,6 +571,7 @@
             };
             const wallMat = new THREE.MeshStandardMaterial(matConfigs[settings.material] || matConfigs.stone);
             const wc = currentGrid.flat().filter(c => c === 1).length;
+            console.log(`🏗️ Construyendo ${wc} paredes...`);
             const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1.0 * settings.thickness, settings.height, 1.0 * settings.thickness), wallMat, wc > 0 ? wc : 1);
             const dummy = new THREE.Object3D();
             let idx = 0;
@@ -531,6 +586,7 @@
                 }
             }
             scene.add(walls);
+            console.log(`✅ ${idx} paredes construidas`);
             
             const floor = new THREE.Mesh(new THREE.PlaneGeometry(21, 21), new THREE.MeshStandardMaterial({ color: 0x3a3a3a }));
             floor.rotation.x = -Math.PI / 2; floor.position.set(10, 0, 10);
@@ -559,7 +615,6 @@
                 btn.addEventListener('mouseup', () => window.gameKeys[dir] = false);
             });
             
-            // --- BOTONES DE UI RESTAURADOS ---
             document.getElementById('btn-exit').onclick = () => { location.reload(); };
             
             let mapVisible = false;
@@ -662,7 +717,6 @@
                 isMoving = true;
             }
             
-            // BLINDAJE DE COLISIONES
             if (grid && grid[0]) {
                 const gx = Math.round((localPlayer.x + mx) / 1.0);
                 const gz = Math.round((localPlayer.z + mz) / 1.0);
