@@ -63,7 +63,6 @@
         .color-btn { width: 45px; height: 45px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform 0.2s; }
         .color-btn.selected { border-color: white; transform: scale(1.2); box-shadow: 0 0 15px rgba(255,255,255,0.7); }
         
-        /* NUEVO: Estilo para selector de color bloqueado */
         .color-picker.disabled .color-btn {
             opacity: 0.3;
             cursor: not-allowed;
@@ -148,7 +147,31 @@
                 <h3>⚙️ Personalización (Solo Anfitrión)</h3>
                 <div class="setting-row"><label>🧱 Grosor: <span id="thickness-val">1.0x</span></label><input type="range" id="thickness-slider" min="0.5" max="2.0" step="0.1" value="1.0"></div>
                 <div class="setting-row"><label>📏 Altura: <span id="height-val">2.0m</span></label><input type="range" id="height-slider" min="1.0" max="4.0" step="0.5" value="2.0"></div>
-                <div class="setting-row"><label>🎨 Material:</label><select id="material-select"><option value="stone">🪨 Piedra</option><option value="brick">🧱 Ladrillo</option><option value="wood">🪵 Madera</option><option value="metal">⚙️ Metal</option><option value="crystal">💎 Cristal</option><option value="moss">🌿 Musgo</option><option value="lava">🌋 Lava</option><option value="snow">❄️ Nieve</option></select></div>
+                <div class="setting-row"><label>🧱 Material de paredes:</label>
+                    <select id="material-select">
+                        <option value="stone">🪨 Piedra</option>
+                        <option value="brick">🧱 Ladrillo</option>
+                        <option value="wood">🪵 Madera</option>
+                        <option value="metal">⚙️ Metal</option>
+                        <option value="crystal">💎 Cristal</option>
+                        <option value="moss">🌿 Musgo</option>
+                        <option value="lava">🌋 Lava</option>
+                        <option value="snow">❄️ Nieve</option>
+                    </select>
+                </div>
+                <!-- NUEVO: Selector de textura de piso -->
+                <div class="setting-row"><label>🟫 Textura del piso:</label>
+                    <select id="floor-select">
+                        <option value="dirt">🟫 Tierra</option>
+                        <option value="tile">🔲 Loseta</option>
+                        <option value="woodfloor">🪵 Madera</option>
+                        <option value="sand">🏖️ Arena</option>
+                        <option value="grass">🌿 Hierba</option>
+                        <option value="metalgrid">⚙️ Rejilla metálica</option>
+                        <option value="stonefloor">🪨 Piedra lisa</option>
+                        <option value="marble">♟️ Mármol ajedrez</option>
+                    </select>
+                </div>
                 <div class="setting-row"><label>💡 Luz ambiental: <span id="ambient-val">100%</span></label><input type="range" id="ambient-slider" min="0" max="200" step="10" value="100"></div>
                 <div class="setting-row"><label>🔦 Linterna: <span id="player-light-val">5.0</span></label><input type="range" id="player-light-slider" min="0" max="10" step="0.5" value="5.0"></div>
                 <div class="setting-row"><label>📡 Alcance: <span id="light-distance-val">50m</span></label><input type="range" id="light-distance-slider" min="10" max="100" step="5" value="50"></div>
@@ -254,6 +277,530 @@
             return newGrid;
         }
 
+        // ============================================================
+        // NUEVO: ALGORITMO DE DETECCIÓN Y REPARACIÓN DE ESPACIOS CERRADOS
+        // ============================================================
+        function fixClosedSpaces(grid, goalPos) {
+            // 1. Flood fill desde la meta para encontrar todas las celdas alcanzables
+            const reachable = Array(21).fill(null).map(() => Array(21).fill(false));
+            const queue = [{x: goalPos.x, y: goalPos.y}];
+            reachable[goalPos.y][goalPos.x] = true;
+            
+            while (queue.length > 0) {
+                const {x, y} = queue.shift();
+                for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+                    const nx = x + dx, ny = y + dy;
+                    if (nx >= 0 && nx < 21 && ny >= 0 && ny < 21 
+                        && !reachable[ny][nx] && grid[ny][nx] === 0) {
+                        reachable[ny][nx] = true;
+                        queue.push({x: nx, y: ny});
+                    }
+                }
+            }
+            
+            // 2. Encontrar celdas libres no alcanzables
+            const unreachable = [];
+            for (let y = 0; y < 21; y++) {
+                for (let x = 0; x < 21; x++) {
+                    if (grid[y][x] === 0 && !reachable[y][x]) {
+                        unreachable.push({x, y});
+                    }
+                }
+            }
+            
+            if (unreachable.length === 0) return { fixed: false, wallsBroken: 0 };
+            
+            let wallsBroken = 0;
+            
+            // 3. Para cada celda no alcanzable, buscar la pared más cercana
+            // que la conecte con una zona alcanzable y romperla
+            for (const startCell of unreachable) {
+                // Si esta celda ya es alcanzable (por reparaciones previas), saltar
+                if (reachable[startCell.y][startCell.x]) continue;
+                
+                // BFS desde esta celda hasta encontrar una pared "frontera"
+                const visited = Array(21).fill(null).map(() => Array(21).fill(false));
+                const bfsQueue = [startCell];
+                visited[startCell.y][startCell.x] = true;
+                let found = false;
+                
+                while (bfsQueue.length > 0 && !found) {
+                    const curr = bfsQueue.shift();
+                    
+                    for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+                        const nx = curr.x + dx, ny = curr.y + dy;
+                        if (nx < 0 || nx >= 21 || ny < 0 || ny >= 21) continue;
+                        if (visited[ny][nx]) continue;
+                        
+                        if (grid[ny][nx] === 1) {
+                            // Es una pared. Verificar si tiene algún vecino alcanzable
+                            for (const [dx2, dy2] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+                                const nnx = nx + dx2, nny = ny + dy2;
+                                if (nnx >= 0 && nnx < 21 && nny >= 0 && nny < 21 
+                                    && reachable[nny][nnx]) {
+                                    // ¡Encontramos una pared que conecta! Romperla
+                                    grid[ny][nx] = 0;
+                                    reachable[ny][nx] = true;
+                                    wallsBroken++;
+                                    found = true;
+                                    // Actualizar reachable con flood fill desde la nueva celda libre
+                                    const newQueue = [{x: nx, y: ny}];
+                                    while (newQueue.length > 0) {
+                                        const c = newQueue.shift();
+                                        for (const [ddx, ddy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+                                            const mx = c.x + ddx, my = c.y + ddy;
+                                            if (mx >= 0 && mx < 21 && my >= 0 && my < 21 
+                                                && !reachable[my][mx] && grid[my][mx] === 0) {
+                                                reachable[my][mx] = true;
+                                                newQueue.push({x: mx, y: my});
+                                            }
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                            if (found) break;
+                        } else {
+                            // Celda libre no alcanzable, continuar BFS
+                            visited[ny][nx] = true;
+                            bfsQueue.push({x: nx, y: ny});
+                        }
+                    }
+                }
+            }
+            
+            return { fixed: wallsBroken > 0, wallsBroken };
+        }
+
+        // ============================================================
+        // NUEVO: GENERADORES DE TEXTURAS PROCEDURALES
+        // ============================================================
+        const textureCache = {};
+        
+        function seededRandom(seed) {
+            let s = seed;
+            return () => {
+                s = (s * 9301 + 49297) % 233280;
+                return s / 233280;
+            };
+        }
+        
+        function generateWallTexture(type) {
+            if (textureCache[`wall_${type}`]) return textureCache[`wall_${type}`];
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            const rand = seededRandom(type.length * 12345);
+            
+            if (type === 'stone') {
+                ctx.fillStyle = '#6b6b6b';
+                ctx.fillRect(0, 0, 256, 256);
+                // Rocas irregulares
+                for (let i = 0; i < 40; i++) {
+                    const x = rand() * 256, y = rand() * 256;
+                    const size = 20 + rand() * 40;
+                    const shade = 80 + rand() * 80;
+                    ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
+                    ctx.beginPath();
+                    ctx.ellipse(x, y, size, size * 0.7, rand() * Math.PI, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = `rgba(0,0,0,0.3)`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+                // Grietas
+                for (let i = 0; i < 15; i++) {
+                    ctx.strokeStyle = `rgba(0,0,0,${0.2 + rand() * 0.3})`;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    let x = rand() * 256, y = rand() * 256;
+                    ctx.moveTo(x, y);
+                    for (let j = 0; j < 5; j++) {
+                        x += (rand() - 0.5) * 30;
+                        y += (rand() - 0.5) * 30;
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                }
+            } else if (type === 'brick') {
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(0, 0, 256, 256);
+                const brickH = 32, brickW = 64;
+                for (let row = 0; row < 8; row++) {
+                    const offset = (row % 2) * (brickW / 2);
+                    for (let col = -1; col < 5; col++) {
+                        const x = col * brickW + offset;
+                        const y = row * brickH;
+                        const shade = 120 + rand() * 60;
+                        ctx.fillStyle = `rgb(${shade + 40},${shade - 40},${shade - 80})`;
+                        ctx.fillRect(x + 2, y + 2, brickW - 4, brickH - 4);
+                        // Textura del ladrillo
+                        for (let i = 0; i < 8; i++) {
+                            ctx.fillStyle = `rgba(0,0,0,${rand() * 0.15})`;
+                            ctx.fillRect(x + rand() * brickW, y + rand() * brickH, 3, 3);
+                        }
+                    }
+                }
+                // Mortero
+                ctx.strokeStyle = '#3a2818';
+                ctx.lineWidth = 3;
+                for (let row = 0; row <= 8; row++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, row * brickH);
+                    ctx.lineTo(256, row * brickH);
+                    ctx.stroke();
+                }
+            } else if (type === 'wood') {
+                ctx.fillStyle = '#6b4423';
+                ctx.fillRect(0, 0, 256, 256);
+                // Tablones verticales
+                const plankW = 40;
+                for (let i = 0; i < 7; i++) {
+                    const x = i * plankW;
+                    const shade = 90 + rand() * 40;
+                    ctx.fillStyle = `rgb(${shade + 30},${shade},${shade - 30})`;
+                    ctx.fillRect(x, 0, plankW - 2, 256);
+                    // Veteadas de madera
+                    for (let j = 0; j < 20; j++) {
+                        ctx.strokeStyle = `rgba(60,30,10,${0.2 + rand() * 0.3})`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        const y = rand() * 256;
+                        ctx.moveTo(x + 2, y);
+                        ctx.bezierCurveTo(
+                            x + plankW * 0.3, y + (rand() - 0.5) * 20,
+                            x + plankW * 0.7, y + (rand() - 0.5) * 20,
+                            x + plankW - 4, y + (rand() - 0.5) * 10
+                        );
+                        ctx.stroke();
+                    }
+                    // Nudos
+                    if (rand() > 0.6) {
+                        ctx.fillStyle = `rgba(40,20,5,0.6)`;
+                        ctx.beginPath();
+                        ctx.ellipse(x + plankW/2, rand() * 256, 6, 10, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            } else if (type === 'metal') {
+                ctx.fillStyle = '#888';
+                ctx.fillRect(0, 0, 256, 256);
+                // Planchas
+                for (let i = 0; i < 4; i++) {
+                    for (let j = 0; j < 4; j++) {
+                        const x = i * 64, y = j * 64;
+                        const shade = 130 + rand() * 40;
+                        ctx.fillStyle = `rgb(${shade},${shade},${shade + 10})`;
+                        ctx.fillRect(x + 2, y + 2, 60, 60);
+                        // Remaches en las esquinas
+                        ctx.fillStyle = '#444';
+                        for (const [rx, ry] of [[8,8],[56,8],[8,56],[56,56]]) {
+                            ctx.beginPath();
+                            ctx.arc(x + rx, y + ry, 3, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.fillStyle = '#aaa';
+                            ctx.beginPath();
+                            ctx.arc(x + rx - 1, y + ry - 1, 1, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.fillStyle = '#444';
+                        }
+                        // Rayones
+                        for (let k = 0; k < 5; k++) {
+                            ctx.strokeStyle = `rgba(50,50,50,${rand() * 0.3})`;
+                            ctx.lineWidth = 1;
+                            ctx.beginPath();
+                            ctx.moveTo(x + rand() * 60, y + rand() * 60);
+                            ctx.lineTo(x + rand() * 60, y + rand() * 60);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            } else if (type === 'crystal') {
+                ctx.fillStyle = '#2a4d8f';
+                ctx.fillRect(0, 0, 256, 256);
+                // Facetas cristalinas
+                for (let i = 0; i < 30; i++) {
+                    const x = rand() * 256, y = rand() * 256;
+                    const size = 15 + rand() * 35;
+                    const hue = 200 + rand() * 40;
+                    const light = 40 + rand() * 40;
+                    ctx.fillStyle = `hsl(${hue}, 60%, ${light}%)`;
+                    ctx.beginPath();
+                    const sides = 3 + Math.floor(rand() * 4);
+                    for (let s = 0; s < sides; s++) {
+                        const angle = (s / sides) * Math.PI * 2 + rand();
+                        const px = x + Math.cos(angle) * size;
+                        const py = y + Math.sin(angle) * size;
+                        if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.strokeStyle = `rgba(150,200,255,0.5)`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+                // Brillos
+                for (let i = 0; i < 20; i++) {
+                    ctx.fillStyle = `rgba(255,255,255,${0.3 + rand() * 0.5})`;
+                    ctx.beginPath();
+                    ctx.arc(rand() * 256, rand() * 256, 1 + rand() * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else if (type === 'moss') {
+                ctx.fillStyle = '#5a5a4a';
+                ctx.fillRect(0, 0, 256, 256);
+                // Piedra base
+                for (let i = 0; i < 30; i++) {
+                    const shade = 70 + rand() * 40;
+                    ctx.fillStyle = `rgb(${shade},${shade},${shade - 10})`;
+                    ctx.beginPath();
+                    ctx.ellipse(rand() * 256, rand() * 256, 15 + rand() * 25, 10 + rand() * 20, rand() * Math.PI, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                // Musgo
+                for (let i = 0; i < 200; i++) {
+                    const x = rand() * 256, y = rand() * 256;
+                    const size = 2 + rand() * 6;
+                    const green = 60 + rand() * 80;
+                    ctx.fillStyle = `rgba(${30 + rand() * 30},${green},${20 + rand() * 20},0.8)`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else if (type === 'lava') {
+                ctx.fillStyle = '#2a1a1a';
+                ctx.fillRect(0, 0, 256, 256);
+                // Rocas oscuras
+                for (let i = 0; i < 25; i++) {
+                    const shade = 30 + rand() * 40;
+                    ctx.fillStyle = `rgb(${shade},${shade - 10},${shade - 15})`;
+                    ctx.beginPath();
+                    ctx.ellipse(rand() * 256, rand() * 256, 20 + rand() * 30, 15 + rand() * 25, rand() * Math.PI, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                // Grietas con lava brillante
+                for (let i = 0; i < 15; i++) {
+                    ctx.strokeStyle = `rgba(255,${80 + rand() * 80},0,0.9)`;
+                    ctx.lineWidth = 2 + rand() * 2;
+                    ctx.shadowColor = '#ff4400';
+                    ctx.shadowBlur = 8;
+                    ctx.beginPath();
+                    let x = rand() * 256, y = rand() * 256;
+                    ctx.moveTo(x, y);
+                    for (let j = 0; j < 6; j++) {
+                        x += (rand() - 0.5) * 40;
+                        y += (rand() - 0.5) * 40;
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                }
+                ctx.shadowBlur = 0;
+            } else if (type === 'snow') {
+                ctx.fillStyle = '#e8f0ff';
+                ctx.fillRect(0, 0, 256, 256);
+                // Cristales de hielo
+                for (let i = 0; i < 150; i++) {
+                    const x = rand() * 256, y = rand() * 256;
+                    const size = 1 + rand() * 4;
+                    const light = 85 + rand() * 15;
+                    ctx.fillStyle = `hsl(210, 30%, ${light}%)`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                // Brillos
+                for (let i = 0; i < 30; i++) {
+                    ctx.fillStyle = `rgba(255,255,255,${0.5 + rand() * 0.5})`;
+                    ctx.beginPath();
+                    ctx.arc(rand() * 256, rand() * 256, 1 + rand() * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(2, 2);
+            textureCache[`wall_${type}`] = texture;
+            return texture;
+        }
+        
+        function generateFloorTexture(type) {
+            if (textureCache[`floor_${type}`]) return textureCache[`floor_${type}`];
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            const rand = seededRandom(type.length * 54321);
+            
+            if (type === 'dirt') {
+                ctx.fillStyle = '#6b4423';
+                ctx.fillRect(0, 0, 256, 256);
+                for (let i = 0; i < 500; i++) {
+                    const shade = 80 + rand() * 60;
+                    ctx.fillStyle = `rgb(${shade + 20},${shade - 20},${shade - 50})`;
+                    ctx.beginPath();
+                    ctx.arc(rand() * 256, rand() * 256, 1 + rand() * 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                // Piedritas
+                for (let i = 0; i < 30; i++) {
+                    const shade = 100 + rand() * 80;
+                    ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
+                    ctx.beginPath();
+                    ctx.ellipse(rand() * 256, rand() * 256, 2 + rand() * 4, 1 + rand() * 3, rand() * Math.PI, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else if (type === 'tile') {
+                ctx.fillStyle = '#3a3a3a';
+                ctx.fillRect(0, 0, 256, 256);
+                const tileSize = 64;
+                for (let i = 0; i < 4; i++) {
+                    for (let j = 0; j < 4; j++) {
+                        const x = i * tileSize, y = j * tileSize;
+                        const shade = 140 + rand() * 40;
+                        ctx.fillStyle = `rgb(${shade},${shade},${shade + 10})`;
+                        ctx.fillRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+                        // Brillo
+                        const grad = ctx.createLinearGradient(x, y, x + tileSize, y + tileSize);
+                        grad.addColorStop(0, `rgba(255,255,255,0.2)`);
+                        grad.addColorStop(1, `rgba(0,0,0,0.1)`);
+                        ctx.fillStyle = grad;
+                        ctx.fillRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+                    }
+                }
+            } else if (type === 'woodfloor') {
+                ctx.fillStyle = '#8b5a2b';
+                ctx.fillRect(0, 0, 256, 256);
+                const plankH = 32;
+                for (let i = 0; i < 8; i++) {
+                    const y = i * plankH;
+                    const shade = 110 + rand() * 40;
+                    ctx.fillStyle = `rgb(${shade + 30},${shade},${shade - 40})`;
+                    ctx.fillRect(0, y + 1, 256, plankH - 2);
+                    // Veteadas horizontales
+                    for (let j = 0; j < 15; j++) {
+                        ctx.strokeStyle = `rgba(60,30,10,${0.15 + rand() * 0.2})`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        const yy = y + rand() * plankH;
+                        ctx.moveTo(0, yy);
+                        ctx.lineTo(256, yy + (rand() - 0.5) * 5);
+                        ctx.stroke();
+                    }
+                }
+            } else if (type === 'sand') {
+                ctx.fillStyle = '#d4b878';
+                ctx.fillRect(0, 0, 256, 256);
+                for (let i = 0; i < 1000; i++) {
+                    const shade = 180 + rand() * 50;
+                    ctx.fillStyle = `rgb(${shade + 20},${shade},${shade - 60})`;
+                    ctx.beginPath();
+                    ctx.arc(rand() * 256, rand() * 256, 0.5 + rand() * 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                // Ondulaciones
+                for (let i = 0; i < 5; i++) {
+                    ctx.strokeStyle = `rgba(150,120,70,0.3)`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    const y = rand() * 256;
+                    ctx.moveTo(0, y);
+                    for (let x = 0; x <= 256; x += 20) {
+                        ctx.lineTo(x, y + Math.sin(x * 0.05) * 5);
+                    }
+                    ctx.stroke();
+                }
+            } else if (type === 'grass') {
+                ctx.fillStyle = '#3a6b2a';
+                ctx.fillRect(0, 0, 256, 256);
+                for (let i = 0; i < 800; i++) {
+                    const x = rand() * 256, y = rand() * 256;
+                    const green = 60 + rand() * 100;
+                    ctx.strokeStyle = `rgb(${30 + rand() * 30},${green},${20 + rand() * 30})`;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + (rand() - 0.5) * 4, y - 3 - rand() * 5);
+                    ctx.stroke();
+                }
+                // Flores ocasionales
+                for (let i = 0; i < 8; i++) {
+                    const colors = ['#ffff00', '#ff66aa', '#ffffff'];
+                    ctx.fillStyle = colors[Math.floor(rand() * colors.length)];
+                    ctx.beginPath();
+                    ctx.arc(rand() * 256, rand() * 256, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            } else if (type === 'metalgrid') {
+                ctx.fillStyle = '#2a2a2a';
+                ctx.fillRect(0, 0, 256, 256);
+                const cellSize = 32;
+                for (let i = 0; i < 8; i++) {
+                    for (let j = 0; j < 8; j++) {
+                        const x = i * cellSize, y = j * cellSize;
+                        // Hueco
+                        ctx.fillStyle = '#0a0a0a';
+                        ctx.fillRect(x + 4, y + 4, cellSize - 8, cellSize - 8);
+                        // Marco metálico
+                        ctx.strokeStyle = '#888';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(x + 2, y + 2, cellSize - 4, cellSize - 4);
+                        // Brillo
+                        ctx.strokeStyle = '#bbb';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(x + 2, y + 2);
+                        ctx.lineTo(x + cellSize - 2, y + 2);
+                        ctx.stroke();
+                    }
+                }
+            } else if (type === 'stonefloor') {
+                ctx.fillStyle = '#5a5a5a';
+                ctx.fillRect(0, 0, 256, 256);
+                for (let i = 0; i < 50; i++) {
+                    const shade = 70 + rand() * 60;
+                    ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
+                    ctx.beginPath();
+                    ctx.ellipse(rand() * 256, rand() * 256, 10 + rand() * 20, 8 + rand() * 15, rand() * Math.PI, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = `rgba(0,0,0,0.3)`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            } else if (type === 'marble') {
+                // Patrón ajedrez
+                const tileSize = 32;
+                for (let i = 0; i < 8; i++) {
+                    for (let j = 0; j < 8; j++) {
+                        const isWhite = (i + j) % 2 === 0;
+                        const shade = isWhite ? (220 + rand() * 30) : (40 + rand() * 30);
+                        ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
+                        ctx.fillRect(i * tileSize, j * tileSize, tileSize, tileSize);
+                        // Vetas de mármol
+                        ctx.strokeStyle = isWhite ? `rgba(180,180,180,0.5)` : `rgba(80,80,80,0.5)`;
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(i * tileSize + rand() * tileSize, j * tileSize);
+                        ctx.bezierCurveTo(
+                            i * tileSize + rand() * tileSize, j * tileSize + rand() * tileSize,
+                            i * tileSize + rand() * tileSize, j * tileSize + rand() * tileSize,
+                            i * tileSize + rand() * tileSize, j * tileSize + tileSize
+                        );
+                        ctx.stroke();
+                    }
+                }
+            }
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(4, 4);
+            textureCache[`floor_${type}`] = texture;
+            return texture;
+        }
+
         let playerId = localStorage.getItem('ll_playerId') || Math.random().toString(36).substr(2, 9);
         localStorage.setItem('ll_playerId', playerId);
         
@@ -292,7 +839,6 @@
                 btn.innerHTML = "✅";
                 setTimeout(() => { btn.innerHTML = "📋"; }, 2000);
             } catch (err) {
-                console.error('Error al copiar: ', err);
                 roomInput.select();
                 document.execCommand('copy');
                 alert("Código copiado al portapapeles.");
@@ -301,7 +847,6 @@
 
         document.querySelectorAll('#game-color-picker .color-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                // NUEVO: Verificar si el selector está bloqueado
                 const colorPicker = document.getElementById('game-color-picker');
                 if (colorPicker.classList.contains('disabled')) return;
                 
@@ -345,7 +890,7 @@
                         hostDesignReady: false,
                         grid: grid, 
                         goal: null,
-                        settings: { thickness: 1.0, height: 2.0, material: 'stone', ambient: 1.0, playerLight: 5.0, lightDist: 50 },
+                        settings: { thickness: 1.0, height: 2.0, material: 'stone', floor: 'dirt', ambient: 1.0, playerLight: 5.0, lightDist: 50 },
                         gameStarted: false,
                         players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: true, ready: false } }
                     });
@@ -370,8 +915,6 @@
                 document.getElementById('btn-host-ready').disabled = true;
                 document.getElementById('btn-ready').disabled = true;
 
-                // NUEVO: Si es anfitrión, habilitar selector de color inmediatamente
-                // Si es invitado, bloquearlo hasta que el anfitrión esté listo
                 const colorPicker = document.getElementById('game-color-picker');
                 if (isHost) {
                     colorPicker.classList.remove('disabled');
@@ -425,7 +968,6 @@
         };
 
         function listenToRoom() {
-            console.log("🔍 Iniciando listener de sala...");
             onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
@@ -444,7 +986,6 @@
                         const diff = Math.abs(localPlayer.x - fbX) + Math.abs(localPlayer.z - fbZ);
                         
                         if (diff > 2.0) {
-                            console.log(`🔄 Respawn detectado: (${localPlayer.x.toFixed(1)},${localPlayer.z.toFixed(1)}) → (${fbX.toFixed(1)},${fbZ.toFixed(1)})`);
                             localPlayer.x = fbX;
                             localPlayer.z = fbZ;
                             respawnCooldown = 0.5;
@@ -466,7 +1007,6 @@
                         statusEl.textContent = `👥 Jugadores listos: ${readyCount}/${totalPlayers}${modeText}`;
                     }
                     
-                    // NUEVO: Si es invitado y el anfitrión terminó el diseño, habilitar selector de color
                     if (!isHost && hostDesignReady) {
                         const colorPicker = document.getElementById('game-color-picker');
                         if (colorPicker.classList.contains('disabled')) {
@@ -475,7 +1015,6 @@
                             statusEl.textContent = '🎨 ¡Ahora puedes elegir tu color!';
                             statusEl.style.color = '#4CAF50';
                             
-                            // Pre-seleccionar color guardado si existe
                             const savedColor = localStorage.getItem('ll_color');
                             if (savedColor && !colorSelectedInRoom) {
                                 const savedBtn = document.querySelector(`#game-color-picker .color-btn[data-color="${savedColor}"]`);
@@ -546,7 +1085,6 @@
                 }
                 
                 if (data.gameStarted && !gameStarted) {
-                    console.log("🚀 gameStarted detectado! Iniciando 3D...");
                     start3DGame(data.settings, grid, goal, players);
                 }
                 
@@ -697,6 +1235,27 @@
             const currentGrid = ensureGrid2D(roomData.grid);
             const maxPlayers = roomData.maxPlayers || 2;
             
+            // NUEVO: Asegurar bordes
+            for (let i = 0; i < GRID_SIZE; i++) { 
+                currentGrid[0][i] = 1; currentGrid[GRID_SIZE-1][i] = 1; 
+                currentGrid[i][0] = 1; currentGrid[i][GRID_SIZE-1] = 1; 
+            }
+            
+            // NUEVO: Reparar espacios cerrados ANTES de calcular posiciones
+            const repairResult = fixClosedSpaces(currentGrid, goal);
+            if (repairResult.fixed) {
+                console.log(`🔧 Se rompieron ${repairResult.wallsBroken} paredes para conectar espacios cerrados`);
+                alert(`⚠️ Se detectaron espacios cerrados en tu laberinto.\n\n🔧 Se rompieron automáticamente ${repairResult.wallsBorn || repairResult.wallsBroken} pared(es) para garantizar que todos los jugadores puedan recorrer el mapa.\n\n¡Revisa el canvas antes de generar!`);
+            }
+            
+            // Asegurar área alrededor de la meta
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    const cx = goal.x + dx, cz = goal.y + dy;
+                    if (cx > 0 && cx < GRID_SIZE - 1 && cz > 0 && cz < GRID_SIZE - 1) currentGrid[cz][cx] = 0;
+                }
+            }
+            
             const startPositions = findFarthestStartPositions(currentGrid, maxPlayers, goal);
             if (startPositions.length < maxPlayers) {
                 alert(`No se pudieron encontrar ${maxPlayers} posiciones válidas. Dibuja más caminos.`);
@@ -704,21 +1263,12 @@
             }
             
             startPositions.forEach(pos => { currentGrid[pos.y][pos.x] = 0; });
-            for (let dy = -1; dy <= 1; dy++) {
-                for (let dx = -1; dx <= 1; dx++) {
-                    const cx = goal.x + dx, cz = goal.y + dy;
-                    if (cx > 0 && cx < GRID_SIZE - 1 && cz > 0 && cz < GRID_SIZE - 1) currentGrid[cz][cx] = 0;
-                }
-            }
-            for (let i = 0; i < GRID_SIZE; i++) { 
-                currentGrid[0][i] = 1; currentGrid[GRID_SIZE-1][i] = 1; 
-                currentGrid[i][0] = 1; currentGrid[i][GRID_SIZE-1] = 1; 
-            }
             
             const settings = {
                 thickness: parseFloat(document.getElementById('thickness-slider').value),
                 height: parseFloat(document.getElementById('height-slider').value),
                 material: document.getElementById('material-select').value,
+                floor: document.getElementById('floor-select').value,
                 ambient: parseInt(document.getElementById('ambient-slider').value) / 100,
                 playerLight: parseFloat(document.getElementById('player-light-slider').value),
                 lightDist: parseInt(document.getElementById('light-distance-slider').value)
@@ -749,7 +1299,6 @@
                 updates[`players/${pid}/hasStick`] = battleMode ? true : (idx === 0);
             });
             
-            console.log(`🚀 Generando para ${playerIds.length} jugadores${battleMode ? ' (MODO BATALLA)' : ''}`);
             update(ref(db, `rooms/${roomId}`), updates);
         }
 
@@ -792,13 +1341,24 @@
             scene.add(playerLight);
             window._playerLight = playerLight;
             
+            // NUEVO: Texturas para paredes
+            const wallTexture = generateWallTexture(settings.material);
+            
             const matConfigs = {
-                stone: { color: 0x808080, roughness: 0.9 }, brick: { color: 0xb74d4d, roughness: 0.8 },
-                wood: { color: 0x8b6f47, roughness: 0.7 }, metal: { color: 0xc0c0c0, roughness: 0.3, metalness: 0.8 },
-                crystal: { color: 0x4d9fff, roughness: 0.2, emissive: 0x1a4d80 }, moss: { color: 0x4a6b4a, roughness: 0.9 },
-                lava: { color: 0xff3300, roughness: 0.5, emissive: 0x550000 }, snow: { color: 0xffffff, roughness: 0.9 }
+                stone: { color: 0xffffff, roughness: 0.9 }, 
+                brick: { color: 0xffffff, roughness: 0.8 },
+                wood: { color: 0xffffff, roughness: 0.7 }, 
+                metal: { color: 0xffffff, roughness: 0.3, metalness: 0.8 },
+                crystal: { color: 0xffffff, roughness: 0.2, emissive: 0x1a4d80, emissiveIntensity: 0.3 }, 
+                moss: { color: 0xffffff, roughness: 0.9 },
+                lava: { color: 0xffffff, roughness: 0.5, emissive: 0x550000, emissiveIntensity: 0.5 }, 
+                snow: { color: 0xffffff, roughness: 0.9 }
             };
-            const wallMat = new THREE.MeshStandardMaterial(matConfigs[settings.material] || matConfigs.stone);
+            const wallMat = new THREE.MeshStandardMaterial({
+                ...(matConfigs[settings.material] || matConfigs.stone),
+                map: wallTexture
+            });
+            
             const wc = currentGrid.flat().filter(c => c === 1).length;
             const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1.0 * settings.thickness, settings.height, 1.0 * settings.thickness), wallMat, wc > 0 ? wc : 1);
             const dummy = new THREE.Object3D();
@@ -814,8 +1374,17 @@
             }
             scene.add(walls);
             
-            const floor = new THREE.Mesh(new THREE.PlaneGeometry(21, 21), new THREE.MeshStandardMaterial({ color: 0x555555 }));
-            floor.rotation.x = -Math.PI / 2; floor.position.set(10, 0, 10);
+            // NUEVO: Piso con textura
+            const floorTexture = generateFloorTexture(settings.floor || 'dirt');
+            const floor = new THREE.Mesh(
+                new THREE.PlaneGeometry(21, 21),
+                new THREE.MeshStandardMaterial({ 
+                    map: floorTexture,
+                    roughness: 0.9
+                })
+            );
+            floor.rotation.x = -Math.PI / 2; 
+            floor.position.set(10, 0, 10);
             scene.add(floor);
             
             if (currentGoal) {
