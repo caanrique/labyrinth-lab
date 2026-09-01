@@ -143,13 +143,10 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
         import { getDatabase, ref, set, update, onValue, get, onDisconnect } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
-        // ==========================================
-        // CONFIGURACIÓN DE FIREBASE (ACTUALIZADA)
-        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyD5zPrdCB4GYZ6O0QORDNZA756YvAW7ztQ",
             authDomain: "labyrinth-lab-d81da.firebaseapp.com",
-            databaseURL: "https://labyrinth-lab-d81da-default-rtdb.firebaseio.com", // ¡AGREGADA MANUALMENTE!
+            databaseURL: "https://labyrinth-lab-d81da-default-rtdb.firebaseio.com",
             projectId: "labyrinth-lab-d81da",
             storageBucket: "labyrinth-lab-d81da.firebasestorage.app",
             messagingSenderId: "233198647806",
@@ -163,7 +160,7 @@
             console.log("✅ Firebase inicializado correctamente");
         } catch (error) {
             console.error("❌ Error al inicializar Firebase:", error);
-            alert("ERROR CRÍTICO: No se pudo conectar a Firebase. Revisa la consola (F12).");
+            alert("ERROR CRÍTICO: No se pudo conectar a Firebase.");
         }
 
         let playerId = localStorage.getItem('ll_playerId') || Math.random().toString(36).substr(2, 9);
@@ -206,8 +203,7 @@
         });
 
         window.joinRoom = async () => {
-            if (!db) { alert("Firebase no se inicializó. Revisa la configuración."); return; }
-            
+            if (!db) { alert("Firebase no se inicializó."); return; }
             try {
                 roomId = roomInput.value.trim().toUpperCase();
                 if (!roomId) { alert("Ingresa un código de sala"); return; }
@@ -216,11 +212,9 @@
                 document.getElementById('join-btn').disabled = true;
 
                 const roomRef = ref(db, `rooms/${roomId}`);
-                console.log("Intentando leer sala:", roomId);
                 const snapshot = await get(roomRef);
                 
                 if (!snapshot.exists()) {
-                    console.log("Sala no existe. Creando como ANFITRIÓN...");
                     isHost = true;
                     await set(roomRef, {
                         host: playerId,
@@ -230,15 +224,12 @@
                         gameStarted: false,
                         players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: true } }
                     });
-                    console.log("✅ Sala creada exitosamente");
                 } else {
-                    console.log("Sala existe. Uniéndose como INVITADO...");
                     isHost = false;
                     await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
                         color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: false
                     });
                     onDisconnect(ref(db, `rooms/${roomId}/players/${playerId}`)).remove();
-                    console.log("✅ Unido a la sala exitosamente");
                 }
                 
                 lobbyScreen.style.display = 'none';
@@ -254,15 +245,14 @@
                 } else {
                     document.getElementById('guest-instruction').style.display = 'block';
                     document.getElementById('settings-panel').style.display = 'none';
-                    document.getElementById('status').textContent = 'Esperando a que el anfitrión dibuje y genere el juego...';
+                    document.getElementById('status').textContent = 'Esperando a que el anfitrión genere el juego...';
                 }
                 
                 initCanvas();
                 listenToRoom();
             } catch (error) {
                 console.error("❌ Error al unirse:", error);
-                alert("ERROR DE CONEXIÓN:\n" + error.message + "\n\n1. Verifica que las Reglas de Firebase estén en 'true'.\n2. Verifica tu conexión a internet.");
-                lobbyStatus.textContent = "Error de conexión";
+                alert("ERROR DE CONEXIÓN: " + error.message);
                 document.getElementById('join-btn').disabled = false;
             }
         };
@@ -272,6 +262,7 @@
                 const data = snapshot.val();
                 if (!data) return;
                 
+                // Actualizamos variables globales por si acaso
                 grid = data.grid || grid;
                 goal = data.goal;
                 players = data.players || {};
@@ -287,12 +278,14 @@
                     }
                 }
                 
+                // BLINDAJE: Pasamos los datos DIRECTAMENTE para evitar condiciones de carrera
                 if (data.gameStarted && !gameStarted) {
-                    start3DGame(data.settings);
+                    console.log("🚀 Iniciando juego con datos directos de Firebase");
+                    start3DGame(data.settings, data.grid, data.goal, data.players);
                 }
                 
                 redrawCanvas();
-                updateOtherPlayers3D();
+                if (gameStarted) updateOtherPlayers3D();
             });
         }
 
@@ -419,6 +412,7 @@
 
         document.getElementById('btn-generate').onclick = () => {
             if (!goal) { alert("El anfitrión debe colocar la meta"); return; }
+            // Asegurar bordes
             for (let i = 0; i < GRID_SIZE; i++) { grid[0][i] = 1; grid[GRID_SIZE-1][i] = 1; grid[i][0] = 1; grid[i][GRID_SIZE-1] = 1; }
             
             const settings = {
@@ -430,26 +424,40 @@
                 lightDist: parseInt(document.getElementById('light-distance-slider').value)
             };
             
+            console.log("🚀 Anfitrión generando juego...");
             update(ref(db, `rooms/${roomId}`), { grid: grid, goal: goal, settings: settings, gameStarted: true });
         };
 
         let scene, camera, renderer, playerAvatars = {};
 
-        function start3DGame(settings) {
+        // BLINDAJE: Recibe los datos directamente de Firebase
+        function start3DGame(settings, safeGrid, safeGoal, safePlayers) {
             gameStarted = true;
             gameScreen.style.display = 'none';
             document.getElementById('game-container').style.display = 'block';
             
-            const p = players[playerId];
-            localPlayer.x = (p.startX || 1) * 1.0;
-            localPlayer.z = (p.startZ || 1) * 1.0;
+            // Usamos los datos seguros pasados como argumento
+            const currentGrid = safeGrid || grid;
+            const currentGoal = safeGoal || goal;
+            const currentPlayers = safePlayers || players;
+            
+            const p = currentPlayers[playerId];
+            if (!p) {
+                console.error("❌ Jugador no encontrado en la sala");
+                alert("Error: No se encontraron datos del jugador. Recarga la página.");
+                return;
+            }
+            
+            localPlayer.x = (p.startX !== undefined ? p.startX : 1) * 1.0;
+            localPlayer.z = (p.startZ !== undefined ? p.startZ : 1) * 1.0;
             localPlayer.hasStick = p.hasStick || false;
             
-            initThreeJS(settings);
+            console.log("✅ Iniciando 3D. Grid tamaño:", currentGrid.length, "Meta:", currentGoal);
+            initThreeJS(settings, currentGrid, currentGoal, currentPlayers);
             animate();
         }
 
-        function initThreeJS(settings) {
+        function initThreeJS(settings, currentGrid, currentGoal, currentPlayers) {
             const gc = document.getElementById('game-container');
             const gameCanvas = document.createElement('canvas');
             gameCanvas.style.cssText = 'width:100%;height:100%;display:block;';
@@ -475,13 +483,18 @@
                 lava: { color: 0xff3300, roughness: 0.5, emissive: 0x550000 }, snow: { color: 0xffffff, roughness: 0.9 }
             };
             const wallMat = new THREE.MeshStandardMaterial(matConfigs[settings.material] || matConfigs.stone);
-            const wc = grid.flat().filter(c => c === 1).length;
-            const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1.0 * settings.thickness, settings.height, 1.0 * settings.thickness), wallMat, wc);
+            
+            // BLINDAJE: Aseguramos que currentGrid sea un array válido
+            const flatGrid = Array.isArray(currentGrid) ? currentGrid.flat() : [];
+            const wc = flatGrid.filter(c => c === 1).length;
+            
+            const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1.0 * settings.thickness, settings.height, 1.0 * settings.thickness), wallMat, wc > 0 ? wc : 1);
             const dummy = new THREE.Object3D();
             let idx = 0;
+            
             for (let y = 0; y < 21; y++) {
                 for (let x = 0; x < 21; x++) {
-                    if (grid[y][x] === 1) {
+                    if (currentGrid[y] && currentGrid[y][x] === 1) {
                         dummy.position.set(x, settings.height / 2, y);
                         dummy.updateMatrix();
                         walls.setMatrixAt(idx++, dummy.matrix);
@@ -495,15 +508,17 @@
             floor.position.set(10, 0, 10);
             scene.add(floor);
             
-            const goalMesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 2 }));
-            goalMesh.position.set(goal.x, 0.5, goal.y);
-            scene.add(goalMesh);
-            const goalLight = new THREE.PointLight(0x00ff00, 1, 5);
-            goalLight.position.set(goal.x, 1, goal.y);
-            scene.add(goalLight);
+            if (currentGoal) {
+                const goalMesh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00ff00, emissiveIntensity: 2 }));
+                goalMesh.position.set(currentGoal.x, 0.5, currentGoal.y);
+                scene.add(goalMesh);
+                const goalLight = new THREE.PointLight(0x00ff00, 1, 5);
+                goalLight.position.set(currentGoal.x, 1, currentGoal.y);
+                scene.add(goalLight);
+            }
             
-            Object.keys(players).forEach(pid => {
-                createAvatar(pid, players[pid].color, players[pid].startX, players[pid].startZ);
+            Object.keys(currentPlayers).forEach(pid => {
+                createAvatar(pid, currentPlayers[pid].color, currentPlayers[pid].startX, currentPlayers[pid].startZ, currentPlayers);
             });
             
             camera.position.set(localPlayer.x, 1.5, localPlayer.z);
@@ -522,21 +537,21 @@
             tagBtn.onclick = () => {
                 if (!localPlayer.hasStick) return;
                 let targetId = null;
-                Object.keys(players).forEach(pid => {
+                Object.keys(currentPlayers).forEach(pid => {
                     if (pid === playerId) return;
-                    const p = players[pid];
+                    const p = currentPlayers[pid];
                     const dist = Math.sqrt((localPlayer.x - p.x)**2 + (localPlayer.z - p.z)**2);
                     if (dist < 1.5) targetId = pid;
                 });
                 
                 if (targetId) {
-                    const target = players[targetId];
+                    const target = currentPlayers[targetId];
                     update(ref(db, `rooms/${roomId}/players/${targetId}`), { x: target.startX, z: target.startZ, hasStick: false });
                 }
             };
         }
 
-        function createAvatar(pid, colorHex, startX, startZ) {
+        function createAvatar(pid, colorHex, startX, startZ, currentPlayers) {
             const group = new THREE.Group();
             const color = parseInt(colorHex);
             const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), new THREE.MeshStandardMaterial({ color }));
@@ -545,7 +560,7 @@
             body.position.y = 0.5; body.rotation.x = Math.PI;
             group.add(head, body);
             
-            if (players[pid].hasStick) {
+            if (currentPlayers[pid] && currentPlayers[pid].hasStick) {
                 const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.2, 8), new THREE.MeshStandardMaterial({ color: 0xffff00 }));
                 stick.position.set(0.4, 0.8, 0.4);
                 stick.rotation.z = -0.3;
@@ -561,7 +576,7 @@
             Object.keys(players).forEach(pid => {
                 const p = players[pid];
                 if (!playerAvatars[pid]) {
-                    createAvatar(pid, p.color, p.startX, p.startZ);
+                    createAvatar(pid, p.color, p.startX, p.startZ, players);
                 }
                 if (pid !== playerId) {
                     playerAvatars[pid].position.set(p.x, 0, p.z);
@@ -613,11 +628,14 @@
                 mz = (mz / len) * localPlayer.speed * dt;
             }
             
-            const gx = Math.round((localPlayer.x + mx) / 1.0);
-            const gz = Math.round((localPlayer.z + mz) / 1.0);
-            if (gx >= 0 && gx < 21 && gz >= 0 && gz < 21 && grid[gz][gx] === 0) {
-                localPlayer.x += mx;
-                localPlayer.z += mz;
+            // BLINDAJE: Verificamos que grid exista antes de chequear colisiones
+            if (grid && grid[0]) {
+                const gx = Math.round((localPlayer.x + mx) / 1.0);
+                const gz = Math.round((localPlayer.z + mz) / 1.0);
+                if (gx >= 0 && gx < 21 && gz >= 0 && gz < 21 && grid[gz][gx] === 0) {
+                    localPlayer.x += mx;
+                    localPlayer.z += mz;
+                }
             }
             
             syncPlayerPosition();
