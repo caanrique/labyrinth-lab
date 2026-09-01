@@ -100,7 +100,7 @@
             <div class="room-info" id="room-display">Sala: ---</div>
             <h2>🖌️ Editor del Laberinto</h2>
             <p id="host-instruction" style="text-align: center; color: #4CAF50; font-weight: bold; display: none;">👑 Eres el ANFITRIÓN. Dibuja el laberinto y coloca la META.</p>
-            <p id="guest-instruction" style="text-align: center; color: #0066ff; font-weight: bold; display: none;">👥 Eres INVITADO. Presiona "Listo" cuando estés preparado.</p>
+            <p id="guest-instruction" style="text-align: center; color: #0066ff; font-weight: bold; display: none;">👥 Eres INVITADO. Espera a que el anfitrión genere el juego.</p>
             
             <!-- Botón de listo para el anfitrión -->
             <button id="btn-host-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 15px auto; background: #28a745; display: none;">✅ Estoy listo para generar</button>
@@ -267,6 +267,7 @@
         let localPlayer = { x: 0, z: 0, yaw: 0, pitch: 0, speed: 3.0, rotSpeed: 2.0, hasStick: false };
         let lastDbUpdate = 0, stepCooldown = 0;
         let joystickVector = { x: 0, y: 0 };
+        let mapVisible = false;
 
         window.gameKeys = { up: false, down: false, left: false, right: false };
 
@@ -331,7 +332,7 @@
                     document.getElementById('btn-place-goal').style.display = 'inline-block';
                     document.getElementById('btn-host-ready').style.display = 'block';
                     document.getElementById('btn-generate').style.display = 'block';
-                    document.getElementById('btn-generate').disabled = true; // Deshabilitado hasta que el anfitrión esté listo
+                    document.getElementById('btn-generate').disabled = true;
                     document.getElementById('status').textContent = '✏️ Dibuja el laberinto y coloca la META. Luego presiona "Listo".';
                     
                     document.getElementById('btn-host-ready').onclick = () => {
@@ -359,6 +360,7 @@
         };
 
         function listenToRoom() {
+            console.log("🔍 Iniciando listener de sala...");
             onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
@@ -389,18 +391,26 @@
                         const hostReady = players[playerId] && players[playerId].ready === true;
                         const btnHostReady = document.getElementById('btn-host-ready');
                         const btnGenerate = document.getElementById('btn-generate');
+                        const maxPlayers = data.maxPlayers || 2;
                         
                         if (hostReady) {
                             btnHostReady.disabled = true;
                             btnHostReady.textContent = '✅ ¡Anfitrión listo!';
                             btnHostReady.style.background = '#555';
-                            btnGenerate.disabled = false;
-                            document.getElementById('status').textContent = 'Esperando a que los demás jugadores estén listos...';
+                            
+                            if (readyCount === maxPlayers && totalPlayers === maxPlayers) {
+                                btnGenerate.disabled = false;
+                                document.getElementById('status').textContent = '¡Todos listos! Puedes generar el mapa.';
+                            } else {
+                                btnGenerate.disabled = true;
+                                document.getElementById('status').textContent = `Esperando a que los ${maxPlayers} jugadores estén listos (${readyCount}/${maxPlayers})...`;
+                            }
                         } else {
                             btnHostReady.disabled = false;
                             btnHostReady.textContent = '✅ Estoy listo para generar';
                             btnHostReady.style.background = '#28a745';
                             btnGenerate.disabled = true;
+                            document.getElementById('status').textContent = '✏️ Dibuja el laberinto y coloca la META. Luego presiona "Listo".';
                         }
                     }
                     
@@ -598,16 +608,14 @@
             
             const playerIds = Object.keys(roomData.players);
             
-            // 1. Verificar que todos los jugadores esperados hayan entrado a la sala
             if (playerIds.length < maxPlayers) {
-                alert(`⚠️ Faltan jugadores por unirse.\n\nConectados: ${playerIds.length}/${maxPlayers}\n\nEspera a que todos entren a la sala.`);
+                alert(`⚠️ Faltan jugadores por unirse.\n\nConectados: ${playerIds.length}/${maxPlayers}`);
                 return;
             }
             
-            // 2. Verificar que TODOS los que están en la sala hayan presionado "Listo"
             const readyPlayers = playerIds.filter(pid => roomData.players[pid].ready === true);
-            if (readyPlayers.length < playerIds.length) {
-                alert(`⚠️ No todos los jugadores han presionado "Listo".\n\nListos: ${readyPlayers.length}/${playerIds.length}`);
+            if (readyPlayers.length < maxPlayers) {
+                alert(`⚠️ No todos los jugadores han presionado "Listo".\n\nListos: ${readyPlayers.length}/${maxPlayers}`);
                 return;
             }
             
@@ -732,12 +740,12 @@
                         joystickVector.x = 0;
                         joystickVector.y = 0;
                     });
+                    console.log("✅ Joystick inicializado");
                 }
             }, 500);
             
             document.getElementById('btn-exit').onclick = () => { location.reload(); };
             
-            let mapVisible = false;
             document.getElementById('btn-map').onclick = () => {
                 mapVisible = !mapVisible;
                 document.getElementById('minimap').style.display = mapVisible ? 'block' : 'none';
@@ -774,6 +782,7 @@
                 camera.updateProjectionMatrix();
                 renderer.setSize(width, height);
                 renderer.setPixelRatio(window.devicePixelRatio);
+                console.log(`📱 Resize: ${width}x${height}`);
             }
             window.addEventListener('resize', onResize);
             window.addEventListener('orientationchange', () => { setTimeout(onResize, 200); });
