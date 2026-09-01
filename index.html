@@ -437,20 +437,41 @@
             }
         });
 
-        document.getElementById('btn-generate').onclick = () => {
-            if (!goal) { alert("El anfitrión debe colocar la meta"); return; }
-            for (let i = 0; i < GRID_SIZE; i++) { grid[0][i] = 1; grid[GRID_SIZE-1][i] = 1; grid[i][0] = 1; grid[i][GRID_SIZE-1] = 1; }
-            const settings = {
-                thickness: parseFloat(document.getElementById('thickness-slider').value),
-                height: parseFloat(document.getElementById('height-slider').value),
-                material: document.getElementById('material-select').value,
-                ambient: parseInt(document.getElementById('ambient-slider').value) / 100,
-                playerLight: parseFloat(document.getElementById('player-light-slider').value),
-                lightDist: parseInt(document.getElementById('light-distance-slider').value)
-            };
-            console.log("🚀 Anfitrión generando juego...");
-            update(ref(db, `rooms/${roomId}`), { grid: grid, goal: goal, settings: settings, gameStarted: true });
-        };
+        document.getElementById('btn-generate').onclick = async () => {
+    if (!goal) { alert("El anfitrión debe colocar la meta"); return; }
+    
+    // LEER EL GRID DIRECTAMENTE DE FIREBASE (garantiza datos actualizados)
+    console.log("📖 Leyendo grid de Firebase...");
+    const roomSnapshot = await get(ref(db, `rooms/${roomId}`));
+    const roomData = roomSnapshot.val();
+    const currentGrid = ensureGrid2D(roomData.grid);
+    
+    // Asegurar bordes
+    for (let i = 0; i < GRID_SIZE; i++) { 
+        currentGrid[0][i] = 1; 
+        currentGrid[GRID_SIZE-1][i] = 1; 
+        currentGrid[i][0] = 1; 
+        currentGrid[i][GRID_SIZE-1] = 1; 
+    }
+    
+    const settings = {
+        thickness: parseFloat(document.getElementById('thickness-slider').value),
+        height: parseFloat(document.getElementById('height-slider').value),
+        material: document.getElementById('material-select').value,
+        ambient: parseInt(document.getElementById('ambient-slider').value) / 100,
+        playerLight: parseFloat(document.getElementById('player-light-slider').value),
+        lightDist: parseInt(document.getElementById('light-distance-slider').value)
+    };
+    
+    console.log("🚀 Anfitrión generando juego con grid de Firebase...");
+    update(ref(db, `rooms/${roomId}`), { 
+        grid: currentGrid, 
+        goal: goal, 
+        settings: settings, 
+        gameStarted: true 
+    });
+};
+
 
         let scene, camera, renderer, playerAvatars = {};
 
