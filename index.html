@@ -61,6 +61,10 @@
         #debug-panel { position: fixed; bottom: 0; left: 0; width: 100%; max-height: 40vh; overflow-y: auto; background: rgba(0,0,0,0.95); color: #0f0; font-family: monospace; font-size: 11px; padding: 10px; z-index: 99999; border-top: 2px solid #0f0; display: none; }
         #debug-panel.visible { display: block; }
         #debug-toggle { position: fixed; bottom: 10px; left: 10px; background: #0f0; color: #000; border: none; padding: 8px 12px; border-radius: 5px; font-weight: bold; z-index: 100000; cursor: pointer; }
+        
+        .battle-checkbox { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 15px 0; padding: 12px; background: rgba(255, 50, 50, 0.1); border: 2px solid #ff3333; border-radius: 8px; }
+        .battle-checkbox input[type="checkbox"] { width: 24px; height: 24px; cursor: pointer; }
+        .battle-checkbox label { color: #ff6666; font-weight: bold; font-size: 15px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -81,6 +85,12 @@
                     <option value="4">4 jugadores</option>
                     <option value="5">5 jugadores</option>
                 </select>
+            </div>
+            
+            <!-- NUEVO: Checkbox Modo Batalla -->
+            <div id="battle-mode-section" class="battle-checkbox" style="display: none;">
+                <input type="checkbox" id="battle-mode">
+                <label for="battle-mode">⚔️ Modo Todos contra Todos<br><small style="color: #aaa; font-weight: normal;">(Todos tienen palo para taggear)</small></label>
             </div>
             
             <p style="margin: 15px 0; color: #aaa;">Elige tu color:</p>
@@ -266,6 +276,7 @@
         let lastDbUpdate = 0, stepCooldown = 0;
         let joystickVector = { x: 0, y: 0 };
         let mapVisible = false;
+        let battleRoyaleMode = false; // NUEVO: Modo todos contra todos
 
         window.gameKeys = { up: false, down: false, left: false, right: false };
 
@@ -294,6 +305,7 @@
                 if (!roomId) { alert("Ingresa un código de sala"); return; }
                 
                 const maxPlayers = parseInt(document.getElementById('player-count').value);
+                const battleMode = document.getElementById('battle-mode').checked;
                 
                 lobbyStatus.textContent = "Conectando...";
                 document.getElementById('join-btn').disabled = true;
@@ -306,11 +318,12 @@
                     await set(roomRef, {
                         host: playerId, 
                         maxPlayers: maxPlayers,
+                        battleRoyale: battleMode, // NUEVO: Guardar modo batalla
                         grid: grid, 
                         goal: null,
                         settings: { thickness: 1.0, height: 2.0, material: 'stone', ambient: 0.8, playerLight: 2.5, lightDist: 25 },
                         gameStarted: false,
-                        players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: true, ready: false } }
+                        players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: battleMode ? true : true, ready: false } }
                     });
                 } else {
                     isHost = false;
@@ -366,11 +379,11 @@
                 grid = ensureGrid2D(data.grid);
                 goal = data.goal;
                 players = data.players || {};
+                battleRoyaleMode = data.battleRoyale === true; // NUEVO: Leer modo batalla
                 
                 if (players[playerId]) {
                     localPlayer.hasStick = players[playerId].hasStick || false;
                     if (gameStarted) {
-                        // CORRECCIÓN: Solo actualizar si hay diferencia significativa
                         const fbX = players[playerId].x;
                         const fbZ = players[playerId].z;
                         const diff = Math.abs(localPlayer.x - fbX) + Math.abs(localPlayer.z - fbZ);
@@ -386,7 +399,8 @@
                     const readyCount = Object.values(players).filter(p => p.ready === true).length;
                     const statusEl = document.getElementById('players-ready-status');
                     if (statusEl) {
-                        statusEl.textContent = `👥 Jugadores listos: ${readyCount}/${totalPlayers}`;
+                        let modeText = battleRoyaleMode ? ' ⚔️ MODO BATALLA' : '';
+                        statusEl.textContent = `👥 Jugadores listos: ${readyCount}/${totalPlayers}${modeText}`;
                     }
                     
                     if (isHost) {
@@ -544,43 +558,47 @@
             }
         });
 
-        // NUEVA FUNCIÓN: Distribución equitativa de posiciones
-        function findFairStartPositions(currentGrid, numPlayers, goalPos) {
+        // NUEVA FUNCIÓN: Posiciones lo más LEJOS posible de la meta
+        function findFarthestStartPositions(currentGrid, numPlayers, goalPos) {
             const freeCells = [];
             for (let y = 1; y < GRID_SIZE - 1; y++) {
                 for (let x = 1; x < GRID_SIZE - 1; x++) {
-                    if (currentGrid[y][x] === 0) freeCells.push({ x, y });
+                    if (currentGrid[y][x] === 0) {
+                        const dist = Math.sqrt((x - goalPos.x) ** 2 + (y - goalPos.y) ** 2);
+                        freeCells.push({ x, y, dist });
+                    }
                 }
             }
             if (freeCells.length < numPlayers) return [];
             
-            // Mezclar aleatoriamente
-            for (let i = freeCells.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [freeCells[i], freeCells[j]] = [freeCells[j], freeCells[i]];
+            // Ordenar de MAYOR a MENOR distancia (más lejanas primero)
+            freeCells.sort((a, b) => b.dist - a.dist);
+            
+            const positions = [];
+            const minDistance = 3; // Distancia mínima entre jugadores
+            
+            for (const cell of freeCells) {
+                if (positions.length >= numPlayers) break;
+                
+                // Verificar que esté lejos de los ya seleccionados
+                let valid = true;
+                for (const pos of positions) {
+                    const dist = Math.sqrt((cell.x - pos.x) ** 2 + (cell.y - pos.y) ** 2);
+                    if (dist < minDistance) {
+                        valid = false;
+                        break;
+                    }
+                }
+                
+                if (valid) {
+                    positions.push({ x: cell.x, y: cell.y });
+                }
             }
             
-            // Calcular distancias de todas las celdas libres a la meta
-            const cellsWithDist = freeCells.map(cell => ({
-                ...cell,
-                dist: Math.sqrt((cell.x - goalPos.x) ** 2 + (cell.y - goalPos.y) ** 2)
-            }));
-            
-            // Ordenar por distancia
-            cellsWithDist.sort((a, b) => a.dist - b.dist);
-            
-            // Dividir en segmentos equitativos
-            const positions = [];
-            const segmentSize = Math.floor(cellsWithDist.length / numPlayers);
-            
-            for (let i = 0; i < numPlayers; i++) {
-                const startIdx = i * segmentSize;
-                const endIdx = (i === numPlayers - 1) ? cellsWithDist.length : (i + 1) * segmentSize;
-                const segment = cellsWithDist.slice(startIdx, endIdx);
-                
-                // Elegir una celda aleatoria del segmento
-                const chosen = segment[Math.floor(Math.random() * segment.length)];
-                positions.push({ x: chosen.x, y: chosen.y });
+            // Si no encontramos suficientes con la restricción, relajar
+            if (positions.length < numPlayers) {
+                console.log(`⚠️ Relajando restricción de distancia. Encontradas: ${positions.length}/${numPlayers}`);
+                return freeCells.slice(0, numPlayers).map(c => ({ x: c.x, y: c.y }));
             }
             
             return positions;
@@ -593,9 +611,10 @@
             const roomData = roomSnapshot.val();
             const currentGrid = ensureGrid2D(roomData.grid);
             const maxPlayers = roomData.maxPlayers || 2;
+            const isBattleRoyale = roomData.battleRoyale === true;
             
-            // NUEVA LÓGICA: Distribución equitativa
-            const startPositions = findFairStartPositions(currentGrid, maxPlayers, goal);
+            // NUEVA LÓGICA: Posiciones más lejanas de la meta
+            const startPositions = findFarthestStartPositions(currentGrid, maxPlayers, goal);
             if (startPositions.length < maxPlayers) {
                 alert(`No se pudieron encontrar ${maxPlayers} posiciones válidas. Dibuja más caminos.`);
                 return;
@@ -644,9 +663,11 @@
                 updates[`players/${pid}/startZ`] = pos.y;
                 updates[`players/${pid}/x`] = pos.x;
                 updates[`players/${pid}/z`] = pos.y;
+                // NUEVO: En modo batalla, TODOS tienen stick
+                updates[`players/${pid}/hasStick`] = isBattleRoyale ? true : (idx === 0);
             });
             
-            console.log(`🚀 Generando para ${playerIds.length} jugadores (todos listos, distribución equitativa)`);
+            console.log(`🚀 Generando para ${playerIds.length} jugadores (posiciones lejanas${isBattleRoyale ? ', MODO BATALLA' : ''})`);
             update(ref(db, `rooms/${roomId}`), updates);
         }
 
@@ -800,7 +821,19 @@
                 });
                 if (targetId) {
                     const target = players[targetId];
-                    update(ref(db, `rooms/${roomId}/players/${targetId}`), { x: target.startX, z: target.startZ, hasStick: false });
+                    // NUEVO: En modo batalla, el target NO pierde su stick
+                    if (battleRoyaleMode) {
+                        update(ref(db, `rooms/${roomId}/players/${targetId}`), { 
+                            x: target.startX, 
+                            z: target.startZ 
+                        });
+                    } else {
+                        update(ref(db, `rooms/${roomId}/players/${targetId}`), { 
+                            x: target.startX, 
+                            z: target.startZ, 
+                            hasStick: false 
+                        });
+                    }
                     playSound('tag');
                 }
             };
@@ -827,7 +860,9 @@
             body.position.y = 0.5; body.rotation.x = Math.PI;
             group.add(head, body);
             
-            if (currentPlayers[pid] && currentPlayers[pid].hasStick) {
+            // NUEVO: En modo batalla, TODOS tienen stick
+            const hasStick = battleRoyaleMode ? true : (currentPlayers[pid] && currentPlayers[pid].hasStick);
+            if (hasStick) {
                 const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.2, 8), new THREE.MeshStandardMaterial({ color: 0xffff00 }));
                 stick.position.set(0.4, 0.8, 0.4); stick.rotation.z = -0.3;
                 group.add(stick);
@@ -1006,6 +1041,24 @@
             
             renderer.render(scene, camera);
         }
+        
+        // NUEVO: Mostrar checkbox de modo batalla solo cuando se crea una sala nueva
+        const originalSet = window.set;
+        const roomInputEl = document.getElementById('room-input');
+        roomInputEl.addEventListener('input', () => {
+            const battleSection = document.getElementById('battle-mode-section');
+            // Mostrar el checkbox solo si el campo está vacío o tiene un código nuevo
+            // (se mostrará después de crear la sala como anfitrión)
+        });
+        
+        // Mostrar checkbox cuando el usuario es anfitrión
+        const originalJoinRoom = window.joinRoom;
+        window.joinRoom = async () => {
+            await originalJoinRoom();
+            if (isHost) {
+                document.getElementById('battle-mode-section').style.display = 'flex';
+            }
+        };
     </script>
 </body>
 </html>
