@@ -70,6 +70,17 @@
             <h2>🚪 Sala de Espera</h2>
             <input type="text" id="room-input" class="lobby-input" placeholder="Código de sala (ej: LAB-123)" maxlength="10">
             <div style="margin: 10px 0;"><button class="lobby-btn" onclick="generateRoomCode()">🎲 Generar Código</button></div>
+            
+            <div id="player-count-section" style="margin: 15px 0;">
+                <label style="color: #aaa;">Número de jugadores:</label><br>
+                <select id="player-count" style="width: 80%; padding: 10px; font-size: 16px; background: #222; color: white; border: 2px solid #4CAF50; border-radius: 5px; margin-top: 5px;">
+                    <option value="2">2 jugadores</option>
+                    <option value="3">3 jugadores</option>
+                    <option value="4">4 jugadores</option>
+                    <option value="5">5 jugadores</option>
+                </select>
+            </div>
+            
             <p style="margin: 15px 0; color: #aaa;">Elige tu color:</p>
             <div class="color-picker" id="color-picker">
                 <div class="color-btn selected" style="background: #ff0000;" data-color="0xff0000"></div>
@@ -88,7 +99,7 @@
             <div class="room-info" id="room-display">Sala: ---</div>
             <h2>🖌️ Editor del Laberinto</h2>
             <p id="host-instruction" style="text-align: center; color: #4CAF50; font-weight: bold; display: none;">👑 Eres el ANFITRIÓN. Dibuja el laberinto y coloca la META.</p>
-            <p id="guest-instruction" style="text-align: center; color: #0066ff; font-weight: bold; display: none;">👥 Eres INVITADO. Coloca tu punto de SALIDA y espera al anfitrión.</p>
+            <p id="guest-instruction" style="text-align: center; color: #0066ff; font-weight: bold; display: none;">👥 Eres INVITADO. Espera a que el anfitrión genere el juego.</p>
             
             <div class="btn-row">
                 <button id="btn-fill-white" style="background: white; color: black;">⬜ Fondo blanco</button>
@@ -100,8 +111,7 @@
             </div>
             
             <div class="marker-section">
-                <label style="font-weight: bold;">📍 Tu punto de inicio:</label><br>
-                <button id="btn-place-start" style="background: #dc3545; color: white;">🚪 Colocar MI salida</button>
+                <label style="font-weight: bold;">📍 Meta del laberinto:</label><br>
                 <button id="btn-place-goal" style="background: #28a745; color: white; display: none;">🎯 Colocar META (Solo Anfitrión)</button>
                 <div id="marker-status"></div>
             </div>
@@ -113,9 +123,9 @@
                 <div class="setting-row"><label>🧱 Grosor: <span id="thickness-val">1.0x</span></label><input type="range" id="thickness-slider" min="0.5" max="2.0" step="0.1" value="1.0"></div>
                 <div class="setting-row"><label>📏 Altura: <span id="height-val">2.0m</span></label><input type="range" id="height-slider" min="1.0" max="4.0" step="0.5" value="2.0"></div>
                 <div class="setting-row"><label>🎨 Material:</label><select id="material-select"><option value="stone">🪨 Piedra</option><option value="brick">🧱 Ladrillo</option><option value="wood">🪵 Madera</option><option value="metal">⚙️ Metal</option><option value="crystal">💎 Cristal</option><option value="moss">🌿 Musgo</option><option value="lava">🌋 Lava</option><option value="snow">❄️ Nieve</option></select></div>
-                <div class="setting-row"><label>💡 Luz ambiental: <span id="ambient-val">50%</span></label><input type="range" id="ambient-slider" min="0" max="100" step="5" value="50"></div>
-                <div class="setting-row"><label>🔦 Linterna: <span id="player-light-val">1.5</span></label><input type="range" id="player-light-slider" min="0" max="5" step="0.5" value="1.5"></div>
-                <div class="setting-row"><label>📡 Alcance: <span id="light-distance-val">15m</span></label><input type="range" id="light-distance-slider" min="5" max="50" step="5" value="15"></div>
+                <div class="setting-row"><label>💡 Luz ambiental: <span id="ambient-val">80%</span></label><input type="range" id="ambient-slider" min="0" max="100" step="5" value="80"></div>
+                <div class="setting-row"><label>🔦 Linterna: <span id="player-light-val">2.5</span></label><input type="range" id="player-light-slider" min="0" max="5" step="0.5" value="2.5"></div>
+                <div class="setting-row"><label>📡 Alcance: <span id="light-distance-val">25m</span></label><input type="range" id="light-distance-slider" min="5" max="50" step="5" value="25"></div>
             </div>
             
             <button id="btn-generate" class="generate-btn" style="display: none;">🎮 Generar 3D e Iniciar</button>
@@ -170,7 +180,6 @@
             alert("ERROR: No se pudo conectar a Firebase.");
         }
 
-        // --- PANEL DE DEBUG ---
         const debugPanel = document.getElementById('debug-panel');
         const debugToggle = document.getElementById('debug-toggle');
         let debugVisible = false;
@@ -245,10 +254,11 @@
         let roomId = "", isHost = false;
         let myColor = localStorage.getItem('ll_color') || "0xff0000";
         let grid = Array(21).fill(null).map(() => Array(21).fill(0));
-        let myStart = null, goal = null, gameStarted = false, gameWon = false;
+        let goal = null, gameStarted = false, gameWon = false;
         let players = {};
         let localPlayer = { x: 0, z: 0, yaw: 0, pitch: 0, speed: 3.0, rotSpeed: 2.0, hasStick: false };
         let lastDbUpdate = 0, stepCooldown = 0;
+        let joystickVector = { x: 0, y: 0 };
 
         window.gameKeys = { up: false, down: false, left: false, right: false };
 
@@ -276,6 +286,8 @@
                 roomId = roomInput.value.trim().toUpperCase();
                 if (!roomId) { alert("Ingresa un código de sala"); return; }
                 
+                const maxPlayers = parseInt(document.getElementById('player-count').value);
+                
                 lobbyStatus.textContent = "Conectando...";
                 document.getElementById('join-btn').disabled = true;
 
@@ -285,15 +297,18 @@
                 if (!snapshot.exists()) {
                     isHost = true;
                     await set(roomRef, {
-                        host: playerId, grid: grid, goal: null,
-                        settings: { thickness: 1.0, height: 2.0, material: 'stone', ambient: 0.5, playerLight: 1.5, lightDist: 15 },
+                        host: playerId, 
+                        maxPlayers: maxPlayers,
+                        grid: grid, 
+                        goal: null,
+                        settings: { thickness: 1.0, height: 2.0, material: 'stone', ambient: 0.8, playerLight: 2.5, lightDist: 25 },
                         gameStarted: false,
-                        players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 1, startZ: 1, hasStick: true } }
+                        players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: true } }
                     });
                 } else {
                     isHost = false;
                     await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
-                        color: myColor, x: 0, z: 0, startX: 19, startZ: 19, hasStick: false
+                        color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: false
                     });
                     onDisconnect(ref(db, `rooms/${roomId}/players/${playerId}`)).remove();
                 }
@@ -349,8 +364,7 @@
                 if (players[playerId]) {
                     localPlayer.hasStick = players[playerId].hasStick || false;
                     if (!gameStarted) {
-                        myStart = { x: players[playerId].startX, y: players[playerId].startZ };
-                        updateMarkerStatus();
+                        // No hacer nada, las posiciones se asignan al generar
                     } else {
                         localPlayer.x = players[playerId].x;
                         localPlayer.z = players[playerId].z;
@@ -408,13 +422,7 @@
             const gx = Math.floor(pos.x / CELL_PX), gy = Math.floor(pos.y / CELL_PX);
             
             if (gx >= 0 && gx < GRID_SIZE && gy >= 0 && gy < GRID_SIZE) {
-                if (placingMode === 'start') {
-                    myStart = { x: gx, y: gy };
-                    placingMode = null;
-                    update(ref(db, `rooms/${roomId}/players/${playerId}`), { startX: gx, startZ: gy });
-                    document.getElementById('status').textContent = '✅ Tu salida colocada. Espera al anfitrión.';
-                    redrawCanvas();
-                } else if (placingMode === 'goal' && isHost) {
+                if (placingMode === 'goal' && isHost) {
                     goal = { x: gx, y: gy };
                     placingMode = null;
                     update(ref(db, `rooms/${roomId}`), { goal: goal });
@@ -436,12 +444,6 @@
                     ctx.fillRect(x * CELL_PX, y * CELL_PX, CELL_PX, CELL_PX);
                 }
             }
-            if (myStart) {
-                ctx.fillStyle = '#dc3545'; ctx.beginPath();
-                ctx.arc(myStart.x * CELL_PX + CELL_PX/2, myStart.y * CELL_PX + CELL_PX/2, CELL_PX * 0.4, 0, Math.PI * 2);
-                ctx.fill(); ctx.fillStyle = 'white'; ctx.font = 'bold 12px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                ctx.fillText('S', myStart.x * CELL_PX + CELL_PX/2, myStart.y * CELL_PX + CELL_PX/2);
-            }
             if (goal) {
                 ctx.fillStyle = '#28a745'; ctx.beginPath();
                 const cx = goal.x * CELL_PX + CELL_PX/2, cy = goal.y * CELL_PX + CELL_PX/2;
@@ -452,19 +454,23 @@
                 }
                 ctx.closePath(); ctx.fill();
             }
-        }
-
-        function updateMarkerStatus() {
-            const sText = myStart ? `✅ Tu salida: (${myStart.x}, ${myStart.y})` : '❌ Coloca tu salida';
-            const gText = isHost ? (goal ? `✅ Meta: (${goal.x}, ${goal.y})` : '❌ Coloca la meta') : '';
-            document.getElementById('marker-status').innerHTML = `${sText} ${gText ? '| ' + gText : ''}`;
+            // Dibujar posiciones de los jugadores
+            Object.values(players).forEach((p, idx) => {
+                if (p.startX !== undefined && p.startZ !== undefined) {
+                    ctx.fillStyle = p.color === '0xff0000' ? '#ff0000' : p.color === '0x0066ff' ? '#0066ff' : p.color === '0x00ff00' ? '#00ff00' : '#ffff00';
+                    ctx.beginPath();
+                    ctx.arc(p.startX * CELL_PX + CELL_PX/2, p.startZ * CELL_PX + CELL_PX/2, CELL_PX * 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = 'white'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(`J${idx + 1}`, p.startX * CELL_PX + CELL_PX/2, p.startZ * CELL_PX + CELL_PX/2);
+                }
+            });
         }
 
         document.getElementById('btn-fill-white').onclick = () => { if(!isHost) return; grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0)); update(ref(db, `rooms/${roomId}`), { grid }); redrawCanvas(); };
         document.getElementById('btn-fill-black').onclick = () => { if(!isHost) return; grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(1)); update(ref(db, `rooms/${roomId}`), { grid }); redrawCanvas(); };
         document.getElementById('btn-draw-white').onclick = () => { currentColor = 'white'; };
         document.getElementById('btn-draw-black').onclick = () => { currentColor = 'black'; };
-        document.getElementById('btn-place-start').onclick = () => { placingMode = 'start'; document.getElementById('status').textContent = '🚪 Toca el canvas para colocar TU salida'; };
         document.getElementById('btn-place-goal').onclick = () => { if(isHost) { placingMode = 'goal'; document.getElementById('status').textContent = '🎯 Toca el canvas para colocar la META'; }};
         
         ['thickness','height','ambient','player-light','light-distance'].forEach(id => {
@@ -479,6 +485,38 @@
             }
         });
 
+        function findValidStartPositions(currentGrid, numPlayers) {
+            const positions = [];
+            const attempts = 100;
+            
+            for (let i = 0; i < attempts && positions.length < numPlayers; i++) {
+                const x = Math.floor(Math.random() * (GRID_SIZE - 4)) + 2;
+                const y = Math.floor(Math.random() * (GRID_SIZE - 4)) + 2;
+                
+                // Verificar que el área 3x3 esté libre
+                let valid = true;
+                for (let dy = -1; dy <= 1 && valid; dy++) {
+                    for (let dx = -1; dx <= 1 && valid; dx++) {
+                        if (currentGrid[y + dy][x + dx] === 1) valid = false;
+                    }
+                }
+                
+                // Verificar que no esté muy cerca de otras posiciones
+                if (valid) {
+                    for (const pos of positions) {
+                        const dist = Math.sqrt((x - pos.x) ** 2 + (y - pos.y) ** 2);
+                        if (dist < 5) { valid = false; break; }
+                    }
+                }
+                
+                if (valid) {
+                    positions.push({ x, y });
+                }
+            }
+            
+            return positions;
+        }
+
         document.getElementById('btn-generate').onclick = async () => {
             if (!goal) { alert("El anfitrión debe colocar la meta"); return; }
             
@@ -486,10 +524,38 @@
             const roomSnapshot = await get(ref(db, `rooms/${roomId}`));
             const roomData = roomSnapshot.val();
             const currentGrid = ensureGrid2D(roomData.grid);
+            const maxPlayers = roomData.maxPlayers || 2;
             
-            const wallsCount = currentGrid.flat().filter(c => c === 1).length;
-            console.log(`📊 Grid leído de Firebase: ${wallsCount} paredes`);
+            console.log(`👥 Buscando ${maxPlayers} posiciones de inicio...`);
+            const startPositions = findValidStartPositions(currentGrid, maxPlayers);
             
+            if (startPositions.length < maxPlayers) {
+                alert(`No se pudieron encontrar ${maxPlayers} posiciones válidas. Dibuja más caminos.`);
+                return;
+            }
+            
+            console.log(`✅ Posiciones encontradas:`, startPositions);
+            
+            // Limpiar zonas de inicio y meta
+            startPositions.forEach(pos => {
+                for (let dy = -1; dy <= 1; dy++) {
+                    for (let dx = -1; dx <= 1; dx++) {
+                        currentGrid[pos.y + dy][pos.x + dx] = 0;
+                    }
+                }
+            });
+            
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    const cx = goal.x + dx;
+                    const cz = goal.y + dy;
+                    if (cx > 0 && cx < GRID_SIZE - 1 && cz > 0 && cz < GRID_SIZE - 1) {
+                        currentGrid[cz][cx] = 0;
+                    }
+                }
+            }
+            
+            // Asegurar bordes
             for (let i = 0; i < GRID_SIZE; i++) { 
                 currentGrid[0][i] = 1; 
                 currentGrid[GRID_SIZE-1][i] = 1; 
@@ -506,9 +572,24 @@
                 lightDist: parseInt(document.getElementById('light-distance-slider').value)
             };
             
+            // Asignar posiciones a los jugadores
+            const playerIds = Object.keys(roomData.players);
+            const updatedPlayers = {};
+            playerIds.forEach((pid, idx) => {
+                const pos = startPositions[idx] || startPositions[0];
+                updatedPlayers[pid] = {
+                    ...roomData.players[pid],
+                    startX: pos.x,
+                    startZ: pos.y,
+                    x: pos.x,
+                    z: pos.y
+                };
+            });
+            
             console.log("🚀 Enviando a Firebase:", {
                 walls: currentGrid.flat().filter(c => c === 1).length,
                 goal: goal,
+                players: Object.keys(updatedPlayers).length,
                 gameStarted: true
             });
             
@@ -516,11 +597,13 @@
                 grid: currentGrid, 
                 goal: goal, 
                 settings: settings, 
+                players: updatedPlayers,
                 gameStarted: true 
             });
         };
 
         let scene, camera, renderer, playerAvatars = {};
+        let joystick = null;
 
         function start3DGame(settings, safeGrid, safeGoal, safePlayers) {
             console.log("🎮 start3DGame llamado con:", {
@@ -539,6 +622,8 @@
             localPlayer.x = (p.startX !== undefined ? p.startX : 1) * 1.0;
             localPlayer.z = (p.startZ !== undefined ? p.startZ : 1) * 1.0;
             localPlayer.hasStick = p.hasStick || false;
+            
+            console.log(`📍 Mi posición inicial: (${localPlayer.x}, ${localPlayer.z})`);
             
             initThreeJS(settings, safeGrid, safeGoal, safePlayers);
             animate();
@@ -613,6 +698,35 @@
                 btn.addEventListener('mousedown', () => window.gameKeys[dir] = true);
                 btn.addEventListener('mouseup', () => window.gameKeys[dir] = false);
             });
+            
+            // INICIALIZAR JOYSTICK
+            setTimeout(() => {
+                const joystickZone = document.getElementById('joystick-zone');
+                if (joystickZone && typeof nipplejs !== 'undefined') {
+                    joystick = nipplejs.create({
+                        zone: joystickZone,
+                        mode: 'dynamic',
+                        size: 120,
+                        color: 'white'
+                    });
+                    
+                    joystick.on('move', (evt, data) => {
+                        if (data.vector) {
+                            joystickVector.x = data.vector.x;
+                            joystickVector.y = data.vector.y;
+                        }
+                    });
+                    
+                    joystick.on('end', () => {
+                        joystickVector.x = 0;
+                        joystickVector.y = 0;
+                    });
+                    
+                    console.log("✅ Joystick inicializado");
+                } else {
+                    console.error("❌ Joystick zone no encontrado o nipplejs no cargado");
+                }
+            }, 100);
             
             document.getElementById('btn-exit').onclick = () => { location.reload(); };
             
@@ -699,20 +813,32 @@
             const dt = (now - (window.lastTime || now)) / 1000;
             window.lastTime = now;
             
+            // Combinar D-pad y joystick
+            let moveX = 0, moveZ = 0;
+            
+            // D-pad
             const fwd = { x: -Math.sin(localPlayer.yaw), z: -Math.cos(localPlayer.yaw) };
             const rgt = { x: Math.cos(localPlayer.yaw), z: -Math.sin(localPlayer.yaw) };
+            
+            if (window.gameKeys.up) { moveX += fwd.x; moveZ += fwd.z; }
+            if (window.gameKeys.down) { moveX -= fwd.x; moveZ -= fwd.z; }
+            if (window.gameKeys.left) { moveX -= rgt.x; moveZ -= rgt.z; }
+            if (window.gameKeys.right) { moveX += rgt.x; moveZ += rgt.z; }
+            
+            // Joystick (vector.y = adelante/atrás, vector.x = rotación)
+            if (Math.abs(joystickVector.y) > 0.1 || Math.abs(joystickVector.x) > 0.1) {
+                moveX += fwd.x * joystickVector.y;
+                moveZ += fwd.z * joystickVector.y;
+                localPlayer.yaw -= joystickVector.x * localPlayer.rotSpeed * dt;
+            }
+            
+            const len = Math.sqrt(moveX*moveX + moveZ*moveZ);
+            let isMoving = false;
             let mx = 0, mz = 0;
             
-            if (window.gameKeys.up) { mx += fwd.x; mz += fwd.z; }
-            if (window.gameKeys.down) { mx -= fwd.x; mz -= fwd.z; }
-            if (window.gameKeys.left) { mx -= rgt.x; mz -= rgt.z; }
-            if (window.gameKeys.right) { mx += rgt.x; mz += rgt.z; }
-            
-            const len = Math.sqrt(mx*mx + mz*mz);
-            let isMoving = false;
             if (len > 0) {
-                mx = (mx / len) * localPlayer.speed * dt;
-                mz = (mz / len) * localPlayer.speed * dt;
+                mx = (moveX / len) * localPlayer.speed * dt;
+                mz = (moveZ / len) * localPlayer.speed * dt;
                 isMoving = true;
             }
             
@@ -744,3 +870,4 @@
     </script>
 </body>
 </html>
+
