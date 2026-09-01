@@ -454,7 +454,6 @@
                 }
                 ctx.closePath(); ctx.fill();
             }
-            // Dibujar posiciones de los jugadores
             Object.values(players).forEach((p, idx) => {
                 if (p.startX !== undefined && p.startZ !== undefined) {
                     ctx.fillStyle = p.color === '0xff0000' ? '#ff0000' : p.color === '0x0066ff' ? '#0066ff' : p.color === '0x00ff00' ? '#00ff00' : '#ffff00';
@@ -486,34 +485,54 @@
         });
 
         function findValidStartPositions(currentGrid, numPlayers) {
-            const positions = [];
-            const attempts = 100;
+            console.log(`🔍 Buscando ${numPlayers} posiciones válidas...`);
             
-            for (let i = 0; i < attempts && positions.length < numPlayers; i++) {
-                const x = Math.floor(Math.random() * (GRID_SIZE - 4)) + 2;
-                const y = Math.floor(Math.random() * (GRID_SIZE - 4)) + 2;
-                
-                // Verificar que el área 3x3 esté libre
-                let valid = true;
-                for (let dy = -1; dy <= 1 && valid; dy++) {
-                    for (let dx = -1; dx <= 1 && valid; dx++) {
-                        if (currentGrid[y + dy][x + dx] === 1) valid = false;
+            // Paso 1: Encontrar todas las celdas libres
+            const freeCells = [];
+            for (let y = 1; y < GRID_SIZE - 1; y++) {
+                for (let x = 1; x < GRID_SIZE - 1; x++) {
+                    if (currentGrid[y][x] === 0) {
+                        freeCells.push({ x, y });
                     }
-                }
-                
-                // Verificar que no esté muy cerca de otras posiciones
-                if (valid) {
-                    for (const pos of positions) {
-                        const dist = Math.sqrt((x - pos.x) ** 2 + (y - pos.y) ** 2);
-                        if (dist < 5) { valid = false; break; }
-                    }
-                }
-                
-                if (valid) {
-                    positions.push({ x, y });
                 }
             }
             
+            console.log(`📊 Celdas libres encontradas: ${freeCells.length}`);
+            
+            if (freeCells.length < numPlayers) {
+                console.log(`❌ No hay suficientes celdas libres`);
+                return [];
+            }
+            
+            // Paso 2: Mezclar aleatoriamente
+            for (let i = freeCells.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [freeCells[i], freeCells[j]] = [freeCells[j], freeCells[i]];
+            }
+            
+            // Paso 3: Seleccionar posiciones separadas
+            const positions = [];
+            const minDistance = 4; // Distancia mínima entre jugadores
+            
+            for (const cell of freeCells) {
+                if (positions.length >= numPlayers) break;
+                
+                // Verificar que esté suficientemente lejos de las posiciones ya seleccionadas
+                let valid = true;
+                for (const pos of positions) {
+                    const dist = Math.sqrt((cell.x - pos.x) ** 2 + (cell.y - pos.y) ** 2);
+                    if (dist < minDistance) {
+                        valid = false;
+                        break;
+                    }
+                }
+                
+                if (valid) {
+                    positions.push(cell);
+                }
+            }
+            
+            console.log(`✅ Posiciones válidas encontradas: ${positions.length}`);
             return positions;
         }
 
@@ -536,15 +555,12 @@
             
             console.log(`✅ Posiciones encontradas:`, startPositions);
             
-            // Limpiar zonas de inicio y meta
+            // Limpiar zonas de inicio (1x1 alrededor de cada posición)
             startPositions.forEach(pos => {
-                for (let dy = -1; dy <= 1; dy++) {
-                    for (let dx = -1; dx <= 1; dx++) {
-                        currentGrid[pos.y + dy][pos.x + dx] = 0;
-                    }
-                }
+                currentGrid[pos.y][pos.x] = 0;
             });
             
+            // Limpiar zona de meta
             for (let dy = -1; dy <= 1; dy++) {
                 for (let dx = -1; dx <= 1; dx++) {
                     const cx = goal.x + dx;
@@ -699,7 +715,6 @@
                 btn.addEventListener('mouseup', () => window.gameKeys[dir] = false);
             });
             
-            // INICIALIZAR JOYSTICK
             setTimeout(() => {
                 const joystickZone = document.getElementById('joystick-zone');
                 if (joystickZone && typeof nipplejs !== 'undefined') {
@@ -813,10 +828,8 @@
             const dt = (now - (window.lastTime || now)) / 1000;
             window.lastTime = now;
             
-            // Combinar D-pad y joystick
             let moveX = 0, moveZ = 0;
             
-            // D-pad
             const fwd = { x: -Math.sin(localPlayer.yaw), z: -Math.cos(localPlayer.yaw) };
             const rgt = { x: Math.cos(localPlayer.yaw), z: -Math.sin(localPlayer.yaw) };
             
@@ -825,7 +838,6 @@
             if (window.gameKeys.left) { moveX -= rgt.x; moveZ -= rgt.z; }
             if (window.gameKeys.right) { moveX += rgt.x; moveZ += rgt.z; }
             
-            // Joystick (vector.y = adelante/atrás, vector.x = rotación)
             if (Math.abs(joystickVector.y) > 0.1 || Math.abs(joystickVector.x) > 0.1) {
                 moveX += fwd.x * joystickVector.y;
                 moveZ += fwd.z * joystickVector.y;
@@ -870,4 +882,3 @@
     </script>
 </body>
 </html>
-
