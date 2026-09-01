@@ -146,8 +146,8 @@
                 <div class="setting-row"><label>🧱 Grosor: <span id="thickness-val">1.0x</span></label><input type="range" id="thickness-slider" min="0.5" max="2.0" step="0.1" value="1.0"></div>
                 <div class="setting-row"><label>📏 Altura: <span id="height-val">2.0m</span></label><input type="range" id="height-slider" min="1.0" max="4.0" step="0.5" value="2.0"></div>
                 <div class="setting-row"><label>🎨 Material:</label><select id="material-select"><option value="stone">🪨 Piedra</option><option value="brick">🧱 Ladrillo</option><option value="wood">🪵 Madera</option><option value="metal">⚙️ Metal</option><option value="crystal">💎 Cristal</option><option value="moss">🌿 Musgo</option><option value="lava">🌋 Lava</option><option value="snow">❄️ Nieve</option></select></div>
-                <!-- CORRECCIÓN 3: Rango de luz aumentado significativamente -->
-                <div class="setting-row"><label>💡 Luz ambiental: <span id="ambient-val">150%</span></label><input type="range" id="ambient-slider" min="0" max="300" step="10" value="150"></div>
+                <!-- CORRECCIÓN 1: Rango de luz reducido (máx 200%, default 100%) -->
+                <div class="setting-row"><label>💡 Luz ambiental: <span id="ambient-val">100%</span></label><input type="range" id="ambient-slider" min="0" max="200" step="10" value="100"></div>
                 <div class="setting-row"><label>🔦 Linterna: <span id="player-light-val">5.0</span></label><input type="range" id="player-light-slider" min="0" max="10" step="0.5" value="5.0"></div>
                 <div class="setting-row"><label>📡 Alcance: <span id="light-distance-val">50m</span></label><input type="range" id="light-distance-slider" min="10" max="100" step="5" value="50"></div>
             </div>
@@ -261,7 +261,6 @@
                 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
                 osc.start(); osc.stop(audioCtx.currentTime + 0.3);
             } else if (type === 'hit') {
-                // CORRECCIÓN 1: Sonido para cuando recibes un ataque
                 osc.type = 'square'; osc.frequency.value = 120;
                 gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
@@ -296,9 +295,7 @@
         let mapVisible = false;
         let battleRoyaleMode = false;
         let colorSelectedInRoom = false;
-        
-        // CORRECCIÓN 1: Variables para controlar el respawn tras ataque
-        let respawnCooldown = 0; // Tiempo restante en el que no se envía posición
+        let respawnCooldown = 0;
 
         window.gameKeys = { up: false, down: false, left: false, right: false };
 
@@ -338,11 +335,8 @@
                 colorSelectedInRoom = true;
                 
                 const statusEl = document.getElementById('color-selection-status');
-                statusEl.textContent = `✅ Color seleccionado. ¡Ahora puedes presionar "Listo"!`;
+                statusEl.textContent = `✅ Color seleccionado.`;
                 statusEl.style.color = '#4CAF50';
-                
-                document.getElementById('btn-host-ready').disabled = false;
-                document.getElementById('btn-ready').disabled = false;
 
                 if (roomId && playerId) {
                     update(ref(db, `rooms/${roomId}/players/${playerId}`), { color: myColor });
@@ -371,9 +365,10 @@
                         host: playerId, 
                         maxPlayers: maxPlayers,
                         battleRoyale: false,
+                        hostDesignReady: false, // CORRECCIÓN 2: Flag de diseño terminado
                         grid: grid, 
                         goal: null,
-                        settings: { thickness: 1.0, height: 2.0, material: 'stone', ambient: 1.5, playerLight: 5.0, lightDist: 50 },
+                        settings: { thickness: 1.0, height: 2.0, material: 'stone', ambient: 1.0, playerLight: 5.0, lightDist: 50 },
                         gameStarted: false,
                         players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: true, ready: false } }
                     });
@@ -401,14 +396,11 @@
                 const savedColor = localStorage.getItem('ll_color');
                 if (savedColor) {
                     const savedBtn = document.querySelector(`#game-color-picker .color-btn[data-color="${savedColor}"]`);
-                    if (savedBtn) {
-                        savedBtn.click();
-                    }
+                    if (savedBtn) savedBtn.click();
                 }
                 
                 if (isHost) {
                     document.getElementById('host-battle-section').style.display = 'flex';
-                    
                     document.getElementById('host-instruction').style.display = 'block';
                     document.getElementById('btn-place-goal').style.display = 'inline-block';
                     document.getElementById('btn-host-ready').style.display = 'block';
@@ -418,14 +410,20 @@
                     
                     document.getElementById('btn-host-ready').onclick = () => {
                         if (!colorSelectedInRoom) { alert("Por favor, selecciona un color primero."); return; }
+                        // CORRECCIÓN 2: Al presionar "listo", marcar también que el diseño está terminado
+                        update(ref(db, `rooms/${roomId}`), { hostDesignReady: true });
                         update(ref(db, `rooms/${roomId}/players/${playerId}`), { ready: true });
                     };
                     document.getElementById('btn-generate').onclick = () => { generateGame(); };
                 } else {
                     document.getElementById('guest-instruction').style.display = 'block';
                     document.getElementById('btn-ready').style.display = 'block';
+                    // CORRECCIÓN 2: Invitados empiezan con botón deshabilitado y mensaje de espera
+                    document.getElementById('btn-ready').disabled = true;
+                    document.getElementById('btn-ready').textContent = '⏳ Espera al anfitrión...';
+                    document.getElementById('btn-ready').style.background = '#555';
                     document.getElementById('settings-panel').style.display = 'none';
-                    document.getElementById('status').textContent = 'Elige tu color y presiona "Listo" cuando estés preparado';
+                    document.getElementById('status').textContent = 'Espera a que el anfitrión termine el diseño del laberinto.';
                     
                     document.getElementById('btn-ready').onclick = () => {
                         if (!colorSelectedInRoom) { alert("Por favor, selecciona un color primero."); return; }
@@ -452,6 +450,7 @@
                 goal = data.goal;
                 players = data.players || {};
                 battleRoyaleMode = data.battleRoyale === true;
+                const hostDesignReady = data.hostDesignReady === true; // CORRECCIÓN 2
                 
                 if (players[playerId]) {
                     localPlayer.hasStick = players[playerId].hasStick || false;
@@ -460,13 +459,11 @@
                         const fbZ = players[playerId].z;
                         const diff = Math.abs(localPlayer.x - fbX) + Math.abs(localPlayer.z - fbZ);
                         
-                        // CORRECCIÓN 1: Si la diferencia es grande, es un respawn/teletransporte
                         if (diff > 2.0) {
                             console.log(`🔄 Respawn detectado: (${localPlayer.x.toFixed(1)},${localPlayer.z.toFixed(1)}) → (${fbX.toFixed(1)},${fbZ.toFixed(1)})`);
                             localPlayer.x = fbX;
                             localPlayer.z = fbZ;
-                            // Pausar sincronización de salida para evitar race condition
-                            respawnCooldown = 0.5; // 500ms de gracia
+                            respawnCooldown = 0.5;
                             playSound('hit');
                         } else if (diff > 0.5) {
                             localPlayer.x = fbX;
@@ -478,32 +475,40 @@
                 if (!gameStarted) {
                     const totalPlayers = Object.keys(players).length;
                     const readyCount = Object.values(players).filter(p => p.ready === true).length;
+                    const maxPlayers = data.maxPlayers || 2;
                     const statusEl = document.getElementById('players-ready-status');
                     if (statusEl) {
                         let modeText = battleRoyaleMode ? ' ⚔️ MODO BATALLA' : '';
                         statusEl.textContent = `👥 Jugadores listos: ${readyCount}/${totalPlayers}${modeText}`;
                     }
                     
+                    // CORRECCIÓN 2: Lógica de flujo secuencial
                     if (isHost) {
                         const hostReady = players[playerId] && players[playerId].ready === true;
                         const btnHostReady = document.getElementById('btn-host-ready');
                         const btnGenerate = document.getElementById('btn-generate');
-                        const maxPlayers = data.maxPlayers || 2;
                         
                         if (hostReady) {
                             btnHostReady.disabled = true;
-                            btnHostReady.textContent = '✅ ¡Anfitrión listo!';
+                            btnHostReady.textContent = '✅ ¡Diseño terminado!';
                             btnHostReady.style.background = '#555';
                             
-                            if (readyCount === maxPlayers && totalPlayers === maxPlayers) {
+                            // Contar solo invitados listos (excluyendo al anfitrión)
+                            const guestReadyCount = Object.keys(players).filter(pid => pid !== playerId && players[pid].ready === true).length;
+                            const expectedGuests = maxPlayers - 1;
+                            
+                            if (guestReadyCount >= expectedGuests && totalPlayers === maxPlayers) {
                                 btnGenerate.disabled = false;
                                 document.getElementById('status').textContent = '¡Todos listos! Puedes generar el mapa.';
+                            } else if (totalPlayers < maxPlayers) {
+                                btnGenerate.disabled = true;
+                                document.getElementById('status').textContent = `Esperando jugadores... (${totalPlayers}/${maxPlayers})`;
                             } else {
                                 btnGenerate.disabled = true;
-                                document.getElementById('status').textContent = `Esperando a que los ${maxPlayers} jugadores estén listos (${readyCount}/${maxPlayers})...`;
+                                document.getElementById('status').textContent = `Esperando a los invitados (${guestReadyCount}/${expectedGuests} listos)...`;
                             }
                         } else {
-                            btnHostReady.disabled = false;
+                            btnHostReady.disabled = !colorSelectedInRoom;
                             btnHostReady.textContent = '✅ Estoy listo para generar';
                             btnHostReady.style.background = '#28a745';
                             btnGenerate.disabled = true;
@@ -513,11 +518,32 @@
                     if (!isHost) {
                         const guestReady = players[playerId] && players[playerId].ready === true;
                         const btnReady = document.getElementById('btn-ready');
+                        
                         if (guestReady) {
+                            // Ya presionó listo
                             btnReady.disabled = true;
                             btnReady.textContent = '✅ ¡Listo!';
                             btnReady.style.background = '#555';
                             document.getElementById('status').textContent = 'Esperando a que el anfitrión inicie la partida...';
+                        } else if (hostDesignReady) {
+                            // CORRECCIÓN 2: El anfitrión terminó el diseño, habilitar botón del invitado
+                            if (colorSelectedInRoom) {
+                                btnReady.disabled = false;
+                                btnReady.textContent = '✅ Listo para jugar';
+                                btnReady.style.background = '#28a745';
+                                document.getElementById('status').textContent = '¡El anfitrión terminó! Elige tu color y presiona "Listo".';
+                            } else {
+                                btnReady.disabled = true;
+                                btnReady.textContent = '🎨 Elige color primero';
+                                btnReady.style.background = '#555';
+                                document.getElementById('status').textContent = '¡El anfitrión terminó! Selecciona un color para continuar.';
+                            }
+                        } else {
+                            // CORRECCIÓN 2: Aún esperando al anfitrión
+                            btnReady.disabled = true;
+                            btnReady.textContent = '⏳ Espera al anfitrión...';
+                            btnReady.style.background = '#555';
+                            document.getElementById('status').textContent = 'Espera a que el anfitrión termine el diseño del laberinto.';
                         }
                     }
                 }
@@ -534,9 +560,7 @@
 
         function syncPlayerPosition() {
             if (!gameStarted || gameWon) return;
-            // CORRECCIÓN 1: No enviar posición durante el cooldown de respawn
             if (respawnCooldown > 0) return;
-            
             const now = Date.now();
             if (now - lastDbUpdate > 100) {
                 update(ref(db, `rooms/${roomId}/players/${playerId}`), { x: localPlayer.x, z: localPlayer.z });
@@ -648,34 +672,21 @@
                 }
             }
             if (freeCells.length < numPlayers) return [];
-            
             freeCells.sort((a, b) => b.dist - a.dist);
-            
             const positions = [];
             const minDistance = 3;
-            
             for (const cell of freeCells) {
                 if (positions.length >= numPlayers) break;
-                
                 let valid = true;
                 for (const pos of positions) {
                     const dist = Math.sqrt((cell.x - pos.x) ** 2 + (cell.y - pos.y) ** 2);
-                    if (dist < minDistance) {
-                        valid = false;
-                        break;
-                    }
+                    if (dist < minDistance) { valid = false; break; }
                 }
-                
-                if (valid) {
-                    positions.push({ x: cell.x, y: cell.y });
-                }
+                if (valid) positions.push({ x: cell.x, y: cell.y });
             }
-            
             if (positions.length < numPlayers) {
-                console.log(`⚠️ Relajando restricción de distancia. Encontradas: ${positions.length}/${numPlayers}`);
                 return freeCells.slice(0, numPlayers).map(c => ({ x: c.x, y: c.y }));
             }
-            
             return positions;
         }
 
@@ -699,9 +710,7 @@
             for (let dy = -1; dy <= 1; dy++) {
                 for (let dx = -1; dx <= 1; dx++) {
                     const cx = goal.x + dx, cz = goal.y + dy;
-                    if (cx > 0 && cx < GRID_SIZE - 1 && cz > 0 && cz < GRID_SIZE - 1) {
-                        currentGrid[cz][cx] = 0;
-                    }
+                    if (cx > 0 && cx < GRID_SIZE - 1 && cz > 0 && cz < GRID_SIZE - 1) currentGrid[cz][cx] = 0;
                 }
             }
             for (let i = 0; i < GRID_SIZE; i++) { 
@@ -719,26 +728,21 @@
             };
             
             const playerIds = Object.keys(roomData.players);
-            
             if (playerIds.length < maxPlayers) {
-                alert(`⚠️ Faltan jugadores por unirse.\n\nConectados: ${playerIds.length}/${maxPlayers}`);
+                alert(`⚠️ Faltan jugadores.\n\nConectados: ${playerIds.length}/${maxPlayers}`);
                 return;
             }
             
             const readyPlayers = playerIds.filter(pid => roomData.players[pid].ready === true);
             if (readyPlayers.length < maxPlayers) {
-                alert(`⚠️ No todos los jugadores han presionado "Listo".\n\nListos: ${readyPlayers.length}/${maxPlayers}`);
+                alert(`⚠️ No todos están listos.\n\nListos: ${readyPlayers.length}/${maxPlayers}`);
                 return;
             }
             
             const updates = { 
-                grid: currentGrid, 
-                goal: goal, 
-                settings: settings, 
-                gameStarted: true,
-                battleRoyale: battleMode
+                grid: currentGrid, goal: goal, settings: settings, 
+                gameStarted: true, battleRoyale: battleMode
             };
-            
             playerIds.forEach((pid, idx) => {
                 const pos = startPositions[idx] || startPositions[0];
                 updates[`players/${pid}/startX`] = pos.x;
@@ -748,7 +752,7 @@
                 updates[`players/${pid}/hasStick`] = battleMode ? true : (idx === 0);
             });
             
-            console.log(`🚀 Generando para ${playerIds.length} jugadores (posiciones lejanas${battleMode ? ', MODO BATALLA' : ''})`);
+            console.log(`🚀 Generando para ${playerIds.length} jugadores${battleMode ? ' (MODO BATALLA)' : ''}`);
             update(ref(db, `rooms/${roomId}`), updates);
         }
 
@@ -760,14 +764,11 @@
             gameStarted = true;
             gameScreen.style.display = 'none';
             document.getElementById('game-container').style.display = 'block';
-            
             const p = safePlayers[playerId];
             if (!p) { alert("Error: Jugador no encontrado."); return; }
-            
             localPlayer.x = (p.startX !== undefined ? p.startX : 1) * 1.0;
             localPlayer.z = (p.startZ !== undefined ? p.startZ : 1) * 1.0;
             localPlayer.hasStick = p.hasStick || false;
-            
             initThreeJS(settings, safeGrid, safeGoal, safePlayers);
             animate();
         }
@@ -780,9 +781,7 @@
             gc.insertAdjacentHTML('beforeend', '<div style="position:absolute;bottom:80px;left:30px;width:180px;height:180px;"><button class="dpad-btn" data-dir="up" style="top:0;left:60px;">⬆️</button><button class="dpad-btn" data-dir="left" style="top:60px;left:0;">⬅️</button><button class="dpad-btn" data-dir="right" style="top:60px;left:120px;">➡️</button><button class="dpad-btn" data-dir="down" style="top:120px;left:60px;">⬇️</button></div><div id="joystick-zone"></div>');
 
             scene = new THREE.Scene();
-            // CORRECCIÓN 3: Fondo más claro para que no se vea tan oscuro
             scene.background = new THREE.Color(0x2a2a4e);
-            // CORRECCIÓN 3: Niebla mucho más lejana para mejor visibilidad
             scene.fog = new THREE.Fog(0x2a2a4e, 10, settings.lightDist * 1.5);
             
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
@@ -790,13 +789,11 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             
-            // CORRECCIÓN 3: Luz ambiental con color base más brillante (0xaaaaaa en vez de 0x404040)
             scene.add(new THREE.AmbientLight(0xaaaaaa, settings.ambient));
-            // CORRECCIÓN 3: Luz del jugador más potente y con mayor alcance
             const playerLight = new THREE.PointLight(0xffffcc, settings.playerLight, settings.lightDist * 1.5);
             playerLight.position.set(0, 1.5, 0);
             scene.add(playerLight);
-            window._playerLight = playerLight; // Guardar referencia para actualizarla en cada frame
+            window._playerLight = playerLight;
             
             const matConfigs = {
                 stone: { color: 0x808080, roughness: 0.9 }, brick: { color: 0xb74d4d, roughness: 0.8 },
@@ -809,7 +806,6 @@
             const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1.0 * settings.thickness, settings.height, 1.0 * settings.thickness), wallMat, wc > 0 ? wc : 1);
             const dummy = new THREE.Object3D();
             let idx = 0;
-            
             for (let y = 0; y < 21; y++) {
                 for (let x = 0; x < 21; x++) {
                     if (currentGrid[y][x] === 1) {
@@ -821,7 +817,6 @@
             }
             scene.add(walls);
             
-            // CORRECCIÓN 3: Piso un poco más claro para mejor contraste
             const floor = new THREE.Mesh(new THREE.PlaneGeometry(21, 21), new THREE.MeshStandardMaterial({ color: 0x555555 }));
             floor.rotation.x = -Math.PI / 2; floor.position.set(10, 0, 10);
             scene.add(floor);
@@ -845,7 +840,6 @@
                 const dir = btn.dataset.dir;
                 const startMove = (e) => { if (e.cancelable) e.preventDefault(); window.gameKeys[dir] = true; };
                 const stopMove = (e) => { if (e.cancelable) e.preventDefault(); window.gameKeys[dir] = false; };
-
                 btn.addEventListener('touchstart', startMove, { passive: false });
                 btn.addEventListener('touchend', stopMove);
                 btn.addEventListener('touchcancel', stopMove);
@@ -888,18 +882,10 @@
                 });
                 if (targetId) {
                     const target = players[targetId];
-                    // CORRECCIÓN 1: Siempre enviar a la posición inicial (startX/startZ)
                     if (battleRoyaleMode) {
-                        update(ref(db, `rooms/${roomId}/players/${targetId}`), { 
-                            x: target.startX, 
-                            z: target.startZ 
-                        });
+                        update(ref(db, `rooms/${roomId}/players/${targetId}`), { x: target.startX, z: target.startZ });
                     } else {
-                        update(ref(db, `rooms/${roomId}/players/${targetId}`), { 
-                            x: target.startX, 
-                            z: target.startZ, 
-                            hasStick: false 
-                        });
+                        update(ref(db, `rooms/${roomId}/players/${targetId}`), { x: target.startX, z: target.startZ, hasStick: false });
                     }
                     playSound('tag');
                 }
@@ -925,16 +911,10 @@
             
             const hasStick = battleRoyaleMode ? true : (currentPlayers[pid] && currentPlayers[pid].hasStick);
             if (hasStick) {
-                const stickMat = new THREE.MeshStandardMaterial({ 
-                    color: colorHex, 
-                    emissive: colorHex, 
-                    emissiveIntensity: 0.8 
-                });
+                const stickMat = new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 0.8 });
                 const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.2, 8), stickMat);
-                stick.position.set(0.4, 0.8, 0.4); 
-                stick.rotation.z = -0.3;
+                stick.position.set(0.4, 0.8, 0.4); stick.rotation.z = -0.3;
                 group.add(stick);
-                
                 const stickLight = new THREE.PointLight(colorHex, 0.6, 5);
                 stickLight.position.set(0.4, 1.4, 0.4);
                 group.add(stickLight);
@@ -956,10 +936,7 @@
                     camera.rotation.order = 'YXZ';
                     camera.rotation.y = localPlayer.yaw;
                     camera.rotation.x = localPlayer.pitch;
-                    // CORRECCIÓN 3: Actualizar posición de la luz del jugador
-                    if (window._playerLight) {
-                        window._playerLight.position.set(localPlayer.x, 1.5, localPlayer.z);
-                    }
+                    if (window._playerLight) window._playerLight.position.set(localPlayer.x, 1.5, localPlayer.z);
                 }
             });
             Object.keys(playerAvatars).forEach(pid => {
@@ -981,12 +958,8 @@
             if (!mapVisible) return;
             const minimapCanvas = document.getElementById('minimap');
             const mctx = minimapCanvas.getContext('2d');
-            const mapSize = 150;
-            const cellPx = mapSize / GRID_SIZE;
-            
-            mctx.fillStyle = '#111';
-            mctx.fillRect(0, 0, mapSize, mapSize);
-            
+            const mapSize = 150, cellPx = mapSize / GRID_SIZE;
+            mctx.fillStyle = '#111'; mctx.fillRect(0, 0, mapSize, mapSize);
             for (let y = 0; y < GRID_SIZE; y++) {
                 for (let x = 0; x < GRID_SIZE; x++) {
                     if (grid[y] && grid[y][x] === 1) {
@@ -995,34 +968,22 @@
                     }
                 }
             }
-            
             if (goal) {
-                mctx.fillStyle = '#0f0';
-                mctx.beginPath();
+                mctx.fillStyle = '#0f0'; mctx.beginPath();
                 mctx.arc(goal.x * cellPx + cellPx/2, goal.y * cellPx + cellPx/2, cellPx * 0.8, 0, Math.PI * 2);
                 mctx.fill();
             }
-            
             Object.keys(players).forEach((pid) => {
                 const p = players[pid];
                 const px = pid === playerId ? localPlayer.x : p.x;
                 const pz = pid === playerId ? localPlayer.z : p.z;
-                
-                mctx.fillStyle = p.color || '#ffffff';
-                mctx.beginPath();
+                mctx.fillStyle = p.color || '#ffffff'; mctx.beginPath();
                 mctx.arc(px * cellPx + cellPx/2, pz * cellPx + cellPx/2, cellPx * 0.7, 0, Math.PI * 2);
                 mctx.fill();
-                
-                mctx.strokeStyle = 'white';
-                mctx.lineWidth = 1;
-                mctx.stroke();
-                
+                mctx.strokeStyle = 'white'; mctx.lineWidth = 1; mctx.stroke();
                 if (pid === playerId) {
-                    const dirX = Math.sin(localPlayer.yaw);
-                    const dirZ = Math.cos(localPlayer.yaw);
-                    mctx.strokeStyle = 'yellow';
-                    mctx.lineWidth = 2;
-                    mctx.beginPath();
+                    const dirX = Math.sin(localPlayer.yaw), dirZ = Math.cos(localPlayer.yaw);
+                    mctx.strokeStyle = 'yellow'; mctx.lineWidth = 2; mctx.beginPath();
                     mctx.moveTo(px * cellPx + cellPx/2, pz * cellPx + cellPx/2);
                     mctx.lineTo((px - dirX * 1.5) * cellPx + cellPx/2, (pz - dirZ * 1.5) * cellPx + cellPx/2);
                     mctx.stroke();
@@ -1040,7 +1001,6 @@
             const dt = (now - (window.lastTime || now)) / 1000;
             window.lastTime = now;
             
-            // CORRECCIÓN 1: Reducir cooldown de respawn
             if (respawnCooldown > 0) respawnCooldown -= dt;
             
             const elapsed = (now - startTime) / 1000;
@@ -1057,9 +1017,6 @@
             if (window.gameKeys.left) { moveX -= rgt.x; moveZ -= rgt.z; }
             if (window.gameKeys.right) { moveX += rgt.x; moveZ += rgt.z; }
 
-            // CORRECCIÓN 2: Eje vertical del joystick invertido
-            // Joystick arriba (y>0) → mirar arriba (pitch negativo)
-            // Joystick abajo (y<0) → mirar abajo (pitch positivo)
             if (Math.abs(joystickVector.y) > 0.1) {
                 localPlayer.pitch += joystickVector.y * localPlayer.rotSpeed * dt;
                 localPlayer.pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, localPlayer.pitch));
@@ -1069,9 +1026,7 @@
             }
 
             const len = Math.sqrt(moveX*moveX + moveZ*moveZ);
-            let isMoving = false;
-            let mx = 0, mz = 0;
-            
+            let isMoving = false, mx = 0, mz = 0;
             if (len > 0) {
                 mx = (moveX / len) * localPlayer.speed * dt;
                 mz = (moveZ / len) * localPlayer.speed * dt;
@@ -1079,23 +1034,17 @@
             }
             
             if (grid && grid[0]) {
-                const nextX = localPlayer.x + mx;
-                const nextZ = localPlayer.z + mz;
-                
-                const cellX = Math.round(nextX);
-                const cellZ_current = Math.round(localPlayer.z);
+                const nextX = localPlayer.x + mx, nextZ = localPlayer.z + mz;
+                const cellX = Math.round(nextX), cellZ_current = Math.round(localPlayer.z);
                 let canMoveX = true;
                 if (cellX >= 0 && cellX < 21 && cellZ_current >= 0 && cellZ_current < 21) {
                     if (grid[cellZ_current][cellX] === 1) canMoveX = false;
                 }
-                
-                const cellZ = Math.round(nextZ);
-                const cellX_current = Math.round(localPlayer.x);
+                const cellZ = Math.round(nextZ), cellX_current = Math.round(localPlayer.x);
                 let canMoveZ = true;
                 if (cellZ >= 0 && cellZ < 21 && cellX_current >= 0 && cellX_current < 21) {
                     if (grid[cellZ][cellX_current] === 1) canMoveZ = false;
                 }
-                
                 if (canMoveX) localPlayer.x = nextX;
                 if (canMoveZ) localPlayer.z = nextZ;
             }
