@@ -46,10 +46,12 @@
         .victory-content button { padding: 15px 30px; font-size: 18px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
         .dpad-btn { position: absolute; width: 60px; height: 60px; background: rgba(255,255,255,0.2); border: 2px solid white; border-radius: 10px; color: white; font-size: 24px; cursor: pointer; user-select: none; touch-action: manipulation; z-index: 10001; }
         .dpad-btn:active { background: rgba(255,255,255,0.5); }
-        #joystick-zone { position: absolute; bottom: 30px; right: 30px; width: 180px; height: 180px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); z-index: 10001; }
+        
+        /* MEJORA 2: Controles elevados para evitar que se pierdan en el borde inferior */
+        #joystick-zone { position: absolute; bottom: 80px; right: 30px; width: 180px; height: 180px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); z-index: 10001; }
         
         #tag-btn {
-            display: none; position: absolute; bottom: 220px; right: 30px;
+            display: none; position: absolute; bottom: 280px; right: 30px; /* Elevado para no solaparse con el joystick */
             width: 80px; height: 80px; border-radius: 50%;
             background: rgba(255, 50, 50, 0.8); border: 3px solid white;
             color: white; font-size: 32px; font-weight: bold;
@@ -87,10 +89,10 @@
                 </select>
             </div>
             
-            <!-- NUEVO: Checkbox Modo Batalla -->
-            <div id="battle-mode-section" class="battle-checkbox" style="display: none;">
+            <!-- MEJORA 1: Casilla visible en el lobby para que el anfitrión la active antes de crear la sala -->
+            <div id="battle-mode-section" class="battle-checkbox">
                 <input type="checkbox" id="battle-mode">
-                <label for="battle-mode">⚔️ Modo Todos contra Todos<br><small style="color: #aaa; font-weight: normal;">(Todos tienen palo para taggear)</small></label>
+                <label for="battle-mode">⚔️ Modo Todos contra Todos<br><small style="color: #aaa; font-weight: normal;">(Todos tienen palo para taggear. Solo aplica si creas la sala)</small></label>
             </div>
             
             <p style="margin: 15px 0; color: #aaa;">Elige tu color:</p>
@@ -276,7 +278,7 @@
         let lastDbUpdate = 0, stepCooldown = 0;
         let joystickVector = { x: 0, y: 0 };
         let mapVisible = false;
-        let battleRoyaleMode = false; // NUEVO: Modo todos contra todos
+        let battleRoyaleMode = false;
 
         window.gameKeys = { up: false, down: false, left: false, right: false };
 
@@ -318,12 +320,12 @@
                     await set(roomRef, {
                         host: playerId, 
                         maxPlayers: maxPlayers,
-                        battleRoyale: battleMode, // NUEVO: Guardar modo batalla
+                        battleRoyale: battleMode,
                         grid: grid, 
                         goal: null,
                         settings: { thickness: 1.0, height: 2.0, material: 'stone', ambient: 0.8, playerLight: 2.5, lightDist: 25 },
                         gameStarted: false,
-                        players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: battleMode ? true : true, ready: false } }
+                        players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: true, ready: false } }
                     });
                 } else {
                     isHost = false;
@@ -379,7 +381,7 @@
                 grid = ensureGrid2D(data.grid);
                 goal = data.goal;
                 players = data.players || {};
-                battleRoyaleMode = data.battleRoyale === true; // NUEVO: Leer modo batalla
+                battleRoyaleMode = data.battleRoyale === true;
                 
                 if (players[playerId]) {
                     localPlayer.hasStick = players[playerId].hasStick || false;
@@ -558,7 +560,6 @@
             }
         });
 
-        // NUEVA FUNCIÓN: Posiciones lo más LEJOS posible de la meta
         function findFarthestStartPositions(currentGrid, numPlayers, goalPos) {
             const freeCells = [];
             for (let y = 1; y < GRID_SIZE - 1; y++) {
@@ -571,16 +572,14 @@
             }
             if (freeCells.length < numPlayers) return [];
             
-            // Ordenar de MAYOR a MENOR distancia (más lejanas primero)
             freeCells.sort((a, b) => b.dist - a.dist);
             
             const positions = [];
-            const minDistance = 3; // Distancia mínima entre jugadores
+            const minDistance = 3;
             
             for (const cell of freeCells) {
                 if (positions.length >= numPlayers) break;
                 
-                // Verificar que esté lejos de los ya seleccionados
                 let valid = true;
                 for (const pos of positions) {
                     const dist = Math.sqrt((cell.x - pos.x) ** 2 + (cell.y - pos.y) ** 2);
@@ -595,7 +594,6 @@
                 }
             }
             
-            // Si no encontramos suficientes con la restricción, relajar
             if (positions.length < numPlayers) {
                 console.log(`⚠️ Relajando restricción de distancia. Encontradas: ${positions.length}/${numPlayers}`);
                 return freeCells.slice(0, numPlayers).map(c => ({ x: c.x, y: c.y }));
@@ -613,7 +611,6 @@
             const maxPlayers = roomData.maxPlayers || 2;
             const isBattleRoyale = roomData.battleRoyale === true;
             
-            // NUEVA LÓGICA: Posiciones más lejanas de la meta
             const startPositions = findFarthestStartPositions(currentGrid, maxPlayers, goal);
             if (startPositions.length < maxPlayers) {
                 alert(`No se pudieron encontrar ${maxPlayers} posiciones válidas. Dibuja más caminos.`);
@@ -663,7 +660,7 @@
                 updates[`players/${pid}/startZ`] = pos.y;
                 updates[`players/${pid}/x`] = pos.x;
                 updates[`players/${pid}/z`] = pos.y;
-                // NUEVO: En modo batalla, TODOS tienen stick
+                // En modo batalla, TODOS tienen stick
                 updates[`players/${pid}/hasStick`] = isBattleRoyale ? true : (idx === 0);
             });
             
@@ -696,7 +693,8 @@
             gameCanvas = document.createElement('canvas');
             gameCanvas.style.cssText = 'width:100%;height:100%;display:block;';
             gc.appendChild(gameCanvas);
-            gc.insertAdjacentHTML('beforeend', '<div style="position:absolute;bottom:30px;left:30px;width:180px;height:180px;"><button class="dpad-btn" data-dir="up" style="top:0;left:60px;">⬆️</button><button class="dpad-btn" data-dir="left" style="top:60px;left:0;">⬅️</button><button class="dpad-btn" data-dir="right" style="top:60px;left:120px;">➡️</button><button class="dpad-btn" data-dir="down" style="top:120px;left:60px;">⬇️</button></div><div id="joystick-zone"></div>');
+            // MEJORA 2: D-pad elevado a bottom:80px para que no se pierda en el borde inferior
+            gc.insertAdjacentHTML('beforeend', '<div style="position:absolute;bottom:80px;left:30px;width:180px;height:180px;"><button class="dpad-btn" data-dir="up" style="top:0;left:60px;">⬆️</button><button class="dpad-btn" data-dir="left" style="top:60px;left:0;">⬅️</button><button class="dpad-btn" data-dir="right" style="top:60px;left:120px;">➡️</button><button class="dpad-btn" data-dir="down" style="top:120px;left:60px;">⬇️</button></div><div id="joystick-zone"></div>');
 
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x1a1a2e);
@@ -821,7 +819,6 @@
                 });
                 if (targetId) {
                     const target = players[targetId];
-                    // NUEVO: En modo batalla, el target NO pierde su stick
                     if (battleRoyaleMode) {
                         update(ref(db, `rooms/${roomId}/players/${targetId}`), { 
                             x: target.startX, 
@@ -860,12 +857,23 @@
             body.position.y = 0.5; body.rotation.x = Math.PI;
             group.add(head, body);
             
-            // NUEVO: En modo batalla, TODOS tienen stick
             const hasStick = battleRoyaleMode ? true : (currentPlayers[pid] && currentPlayers[pid].hasStick);
             if (hasStick) {
-                const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.2, 8), new THREE.MeshStandardMaterial({ color: 0xffff00 }));
-                stick.position.set(0.4, 0.8, 0.4); stick.rotation.z = -0.3;
+                // MEJORA 3: Stick con el color del jugador y propiedad emisiva para que brille
+                const stickMat = new THREE.MeshStandardMaterial({ 
+                    color: color, 
+                    emissive: color, 
+                    emissiveIntensity: 0.8 
+                });
+                const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.2, 8), stickMat);
+                stick.position.set(0.4, 0.8, 0.4); 
+                stick.rotation.z = -0.3;
                 group.add(stick);
+                
+                // MEJORA 3: Luz puntual adherida al stick para iluminar el entorno con el color del jugador
+                const stickLight = new THREE.PointLight(color, 0.6, 5);
+                stickLight.position.set(0.4, 1.4, 0.4);
+                group.add(stickLight);
             }
             group.position.set(startX, 0, startZ);
             scene.add(group);
@@ -1041,24 +1049,6 @@
             
             renderer.render(scene, camera);
         }
-        
-        // NUEVO: Mostrar checkbox de modo batalla solo cuando se crea una sala nueva
-        const originalSet = window.set;
-        const roomInputEl = document.getElementById('room-input');
-        roomInputEl.addEventListener('input', () => {
-            const battleSection = document.getElementById('battle-mode-section');
-            // Mostrar el checkbox solo si el campo está vacío o tiene un código nuevo
-            // (se mostrará después de crear la sala como anfitrión)
-        });
-        
-        // Mostrar checkbox cuando el usuario es anfitrión
-        const originalJoinRoom = window.joinRoom;
-        window.joinRoom = async () => {
-            await originalJoinRoom();
-            if (isHost) {
-                document.getElementById('battle-mode-section').style.display = 'flex';
-            }
-        };
     </script>
 </body>
 </html>
