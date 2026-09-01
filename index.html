@@ -99,7 +99,9 @@
             <div class="room-info" id="room-display">Sala: ---</div>
             <h2>🖌️ Editor del Laberinto</h2>
             <p id="host-instruction" style="text-align: center; color: #4CAF50; font-weight: bold; display: none;">👑 Eres el ANFITRIÓN. Dibuja el laberinto y coloca la META.</p>
-            <p id="guest-instruction" style="text-align: center; color: #0066ff; font-weight: bold; display: none;">👥 Eres INVITADO. Espera a que el anfitrión genere el juego.</p>
+            <p id="guest-instruction" style="text-align: center; color: #0066ff; font-weight: bold; display: none;">👥 Eres INVITADO. Presiona "Listo" cuando estés preparado.</p>
+            <button id="btn-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin-top: 15px; background: #28a745; display: none;">✅ Listo para jugar</button>
+            <p id="players-ready-status" style="margin-top: 15px; color: #4CAF50; font-weight: bold;"></p>
             
             <div class="btn-row">
                 <button id="btn-fill-white" style="background: white; color: black;">⬜ Fondo blanco</button>
@@ -304,12 +306,12 @@
                         goal: null,
                         settings: { thickness: 1.0, height: 2.0, material: 'stone', ambient: 0.8, playerLight: 2.5, lightDist: 25 },
                         gameStarted: false,
-                        players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: true } }
+                        players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: true, ready: false } }
                     });
                 } else {
                     isHost = false;
                     await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
-                        color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: false
+                        color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: false, ready: false
                     });
                     onDisconnect(ref(db, `rooms/${roomId}/players/${playerId}`)).remove();
                 }
@@ -324,10 +326,21 @@
                     document.getElementById('btn-place-goal').style.display = 'inline-block';
                     document.getElementById('btn-generate').style.display = 'block';
                     document.getElementById('status').textContent = '✏️ Modo: dibujar negro (paredes)';
+                    document.getElementById('players-ready-status').textContent = `👥 Jugadores listos: 1/${maxPlayers}`;
+                    document.getElementById('btn-generate').onclick = () => { generateGame(); };
                 } else {
                     document.getElementById('guest-instruction').style.display = 'block';
+                    document.getElementById('btn-ready').style.display = 'block';
                     document.getElementById('settings-panel').style.display = 'none';
-                    document.getElementById('status').textContent = 'Esperando a que el anfitrión genere el juego...';
+                    document.getElementById('status').textContent = 'Presiona "Listo" cuando estés preparado';
+                    
+                    document.getElementById('btn-ready').onclick = () => {
+                        update(ref(db, `rooms/${roomId}/players/${playerId}`), { ready: true });
+                        document.getElementById('btn-ready').disabled = true;
+                        document.getElementById('btn-ready').textContent = '✅ ¡Listo!';
+                        document.getElementById('btn-ready').style.background = '#555';
+                        document.getElementById('status').textContent = 'Esperando a que el anfitrión inicie la partida...';
+                    };
                 }
                 
                 initCanvas();
@@ -354,6 +367,16 @@
                     if (gameStarted) {
                         localPlayer.x = players[playerId].x;
                         localPlayer.z = players[playerId].z;
+                    }
+                }
+                
+                // Actualizar estado de jugadores listos en tiempo real
+                if (!gameStarted) {
+                    const totalPlayers = Object.keys(players).length;
+                    const readyCount = Object.values(players).filter(p => p.ready === true).length;
+                    const statusEl = document.getElementById('players-ready-status');
+                    if (statusEl) {
+                        statusEl.textContent = `👥 Jugadores listos: ${readyCount}/${totalPlayers}`;
                     }
                 }
                 
@@ -480,17 +503,13 @@
                     if (currentGrid[y][x] === 0) freeCells.push({ x, y });
                 }
             }
-            
             if (freeCells.length < numPlayers) return [];
-            
             for (let i = freeCells.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [freeCells[i], freeCells[j]] = [freeCells[j], freeCells[i]];
             }
-            
             const positions = [];
             const minDistance = 4;
-            
             for (const cell of freeCells) {
                 if (positions.length >= numPlayers) break;
                 let valid = true;
@@ -500,11 +519,10 @@
                 }
                 if (valid) positions.push(cell);
             }
-            
             return positions;
         }
 
-        document.getElementById('btn-generate').onclick = async () => {
+        async function generateGame() {
             if (!goal) { alert("El anfitrión debe colocar la meta"); return; }
             
             const roomSnapshot = await get(ref(db, `rooms/${roomId}`));
@@ -513,14 +531,12 @@
             const maxPlayers = roomData.maxPlayers || 2;
             
             const startPositions = findValidStartPositions(currentGrid, maxPlayers);
-            
             if (startPositions.length < maxPlayers) {
                 alert(`No se pudieron encontrar ${maxPlayers} posiciones válidas. Dibuja más caminos.`);
                 return;
             }
             
             startPositions.forEach(pos => { currentGrid[pos.y][pos.x] = 0; });
-            
             for (let dy = -1; dy <= 1; dy++) {
                 for (let dx = -1; dx <= 1; dx++) {
                     const cx = goal.x + dx, cz = goal.y + dy;
@@ -529,7 +545,6 @@
                     }
                 }
             }
-            
             for (let i = 0; i < GRID_SIZE; i++) { 
                 currentGrid[0][i] = 1; currentGrid[GRID_SIZE-1][i] = 1; 
                 currentGrid[i][0] = 1; currentGrid[i][GRID_SIZE-1] = 1; 
@@ -545,21 +560,14 @@
             };
             
             const playerIds = Object.keys(roomData.players);
+            const readyPlayers = playerIds.filter(pid => roomData.players[pid].ready === true);
             
-            // Verificar que todos los jugadores estén presentes
-            if (playerIds.length < maxPlayers) {
-                alert(`⚠️ Faltan jugadores. Se necesitan ${maxPlayers} pero solo hay ${playerIds.length}. Espera a que todos se unan.`);
+            if (readyPlayers.length < maxPlayers) {
+                alert(`⚠️ No todos los jugadores están listos.\n\nListos: ${readyPlayers.length}/${maxPlayers}\n\nEspera a que todos presionen "Listo".`);
                 return;
             }
             
-            // Usar rutas anidadas para NO sobrescribir el nodo players completo
-            const updates = {
-                grid: currentGrid, 
-                goal: goal, 
-                settings: settings, 
-                gameStarted: true
-            };
-            
+            const updates = { grid: currentGrid, goal: goal, settings: settings, gameStarted: true };
             playerIds.forEach((pid, idx) => {
                 const pos = startPositions[idx] || startPositions[0];
                 updates[`players/${pid}/startX`] = pos.x;
@@ -568,10 +576,9 @@
                 updates[`players/${pid}/z`] = pos.y;
             });
             
-            console.log(`🚀 Generando para ${playerIds.length} jugadores`);
+            console.log(`🚀 Generando para ${playerIds.length} jugadores (todos listos)`);
             update(ref(db, `rooms/${roomId}`), updates);
-
-        };
+        }
 
         let scene, camera, renderer, playerAvatars = {};
         let joystick = null;
@@ -662,7 +669,6 @@
                 btn.addEventListener('mouseup', () => window.gameKeys[dir] = false);
             });
             
-            // CORRECCIÓN 2: Joystick inteligente (vertical=mover, horizontal=rotar)
             setTimeout(() => {
                 const joystickZone = document.getElementById('joystick-zone');
                 if (joystickZone && typeof nipplejs !== 'undefined') {
@@ -672,19 +678,16 @@
                         size: 120,
                         color: 'white'
                     });
-                    
                     joystick.on('move', (evt, data) => {
                         if (data.vector) {
                             joystickVector.x = data.vector.x;
                             joystickVector.y = data.vector.y;
                         }
                     });
-                    
                     joystick.on('end', () => {
                         joystickVector.x = 0;
                         joystickVector.y = 0;
                     });
-                    
                     console.log("✅ Joystick inicializado");
                 }
             }, 500);
@@ -719,7 +722,6 @@
                 }
             };
             
-            // CORRECCIÓN 1: Resize listener para rotación de pantalla
             function onResize() {
                 if (!camera || !renderer) return;
                 const width = window.innerWidth;
@@ -728,13 +730,9 @@
                 camera.updateProjectionMatrix();
                 renderer.setSize(width, height);
                 renderer.setPixelRatio(window.devicePixelRatio);
-                console.log(`📱 Resize: ${width}x${height}`);
             }
-            
             window.addEventListener('resize', onResize);
-            window.addEventListener('orientationchange', () => {
-                setTimeout(onResize, 200);
-            });
+            window.addEventListener('orientationchange', () => { setTimeout(onResize, 200); });
         }
 
         function createAvatar(pid, colorHex, startX, startZ, currentPlayers) {
@@ -785,7 +783,6 @@
             document.getElementById('tag-btn').style.display = nearSomeone ? 'block' : 'none';
         }
 
-        // CORRECCIÓN 3: Función de minimap
         function drawMinimap() {
             if (!mapVisible) return;
             const minimapCanvas = document.getElementById('minimap');
@@ -793,11 +790,9 @@
             const mapSize = 150;
             const cellPx = mapSize / GRID_SIZE;
             
-            // Fondo
             mctx.fillStyle = '#111';
             mctx.fillRect(0, 0, mapSize, mapSize);
             
-            // Paredes
             for (let y = 0; y < GRID_SIZE; y++) {
                 for (let x = 0; x < GRID_SIZE; x++) {
                     if (grid[y] && grid[y][x] === 1) {
@@ -807,7 +802,6 @@
                 }
             }
             
-            // Meta
             if (goal) {
                 mctx.fillStyle = '#0f0';
                 mctx.beginPath();
@@ -815,7 +809,6 @@
                 mctx.fill();
             }
             
-            // Jugadores
             const colorMap = {
                 '0xff0000': '#ff0000', '0x0066ff': '#0066ff', '0x00ff00': '#00ff00',
                 '0xffff00': '#ffff00', '0xff00ff': '#ff00ff', '0xff8800': '#ff8800', '0xffffff': '#ffffff'
@@ -831,12 +824,10 @@
                 mctx.arc(px * cellPx + cellPx/2, pz * cellPx + cellPx/2, cellPx * 0.7, 0, Math.PI * 2);
                 mctx.fill();
                 
-                // Borde blanco para resaltar
                 mctx.strokeStyle = 'white';
                 mctx.lineWidth = 1;
                 mctx.stroke();
                 
-                // Indicador de dirección (solo para el jugador local)
                 if (pid === playerId) {
                     const dirX = Math.sin(localPlayer.yaw);
                     const dirZ = Math.cos(localPlayer.yaw);
@@ -860,27 +851,20 @@
             const dt = (now - (window.lastTime || now)) / 1000;
             window.lastTime = now;
             
-            // Actualizar timer
             const elapsed = (now - startTime) / 1000;
             const m = Math.floor(elapsed / 60).toString().padStart(2, '0');
             const s = Math.floor(elapsed % 60).toString().padStart(2, '0');
             document.getElementById('timer').textContent = `⏱️ ${m}:${s}`;
             
             let moveX = 0, moveZ = 0;
-            
             const fwd = { x: -Math.sin(localPlayer.yaw), z: -Math.cos(localPlayer.yaw) };
             const rgt = { x: Math.cos(localPlayer.yaw), z: -Math.sin(localPlayer.yaw) };
             
-            // D-pad
             if (window.gameKeys.up) { moveX += fwd.x; moveZ += fwd.z; }
             if (window.gameKeys.down) { moveX -= fwd.x; moveZ -= fwd.z; }
             if (window.gameKeys.left) { moveX -= rgt.x; moveZ -= rgt.z; }
             if (window.gameKeys.right) { moveX += rgt.x; moveZ += rgt.z; }
 
-            
-            // Joystick inteligente
-            // Vertical (y) = mirar arriba/abajo (pitch)
-            // Horizontal (x) = rotar cámara (yaw)
             if (Math.abs(joystickVector.y) > 0.1) {
                 localPlayer.pitch -= joystickVector.y * localPlayer.rotSpeed * dt;
                 localPlayer.pitch = Math.max(-Math.PI/3, Math.min(Math.PI/3, localPlayer.pitch));
@@ -889,7 +873,6 @@
                 localPlayer.yaw -= joystickVector.x * localPlayer.rotSpeed * dt;
             }
 
-            
             const len = Math.sqrt(moveX*moveX + moveZ*moveZ);
             let isMoving = false;
             let mx = 0, mz = 0;
@@ -900,32 +883,25 @@
                 isMoving = true;
             }
             
-            // Colisiones mejoradas con margen de seguridad
             if (grid && grid[0]) {
                 const margin = 0.3;
                 const newX = localPlayer.x + mx;
                 const newZ = localPlayer.z + mz;
                 
-                // Verificar X por separado
                 const gxNew = Math.round(newX);
                 const gzCurrent = Math.round(localPlayer.z);
                 const canMoveX = (gxNew >= 0 && gxNew < 21 && gzCurrent >= 0 && gzCurrent < 21 && 
-                                  grid[gzCurrent][gxNew] === 0 &&
-                                  Math.abs(newX - gxNew) > margin);
+                                  grid[gzCurrent][gxNew] === 0 && Math.abs(newX - gxNew) > margin);
                 
-                // Verificar Z por separado
                 const gzNew = Math.round(newZ);
                 const gxCurrent = Math.round(localPlayer.x);
                 const canMoveZ = (gzNew >= 0 && gzNew < 21 && gxCurrent >= 0 && gxCurrent < 21 && 
-                                  grid[gzNew][gxCurrent] === 0 &&
-                                  Math.abs(newZ - gzNew) > margin);
+                                  grid[gzNew][gxCurrent] === 0 && Math.abs(newZ - gzNew) > margin);
                 
-                // Mover en cada eje independientemente (permite deslizarse contra paredes)
                 if (canMoveX) localPlayer.x = newX;
                 if (canMoveZ) localPlayer.z = newZ;
             }
 
-            
             if (isMoving) {
                 stepCooldown -= dt;
                 if (stepCooldown <= 0) { playSound('step'); stepCooldown = 0.35; }
@@ -933,8 +909,6 @@
             
             syncPlayerPosition();
             updateOtherPlayers3D();
-            
-            // CORRECCIÓN 3: Dibujar minimap cada frame
             drawMinimap();
             
             if (goal && Math.sqrt((localPlayer.x - goal.x)**2 + (localPlayer.z - goal.y)**2) < 0.6) {
