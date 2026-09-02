@@ -12,27 +12,18 @@
         h2 { text-align: center; margin: 15px 0; font-size: 20px; color: #4CAF50; }
         .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; }
         
-        .screen { display: none; }
-        .screen.active { display: block; }
-        
-        /* ============ LOBBY ============ */
         #lobby-screen { text-align: center; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 10px; margin-top: 20px; }
         .lobby-input { width: 100%; padding: 12px; font-size: 18px; text-align: center; border: 2px solid #4CAF50; border-radius: 5px; background: #222; color: white; text-transform: uppercase; }
         .lobby-btn { padding: 12px 25px; font-size: 16px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
         .lobby-btn:disabled { background: #555; cursor: not-allowed; }
-        .input-group { display: flex; justify-content: center; gap: 5px; margin: 10px 0; }
-        .input-group .lobby-input { margin: 0; }
         
-        /* ============ SELECCIÓN DE MODO ============ */
         .mode-selector {
             display: flex;
             flex-direction: column;
             gap: 15px;
             margin: 20px 0;
-            padding: 20px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 10px;
         }
+        
         .mode-btn {
             padding: 20px;
             font-size: 18px;
@@ -43,47 +34,28 @@
             cursor: pointer;
             transition: all 0.3s;
         }
-        .mode-btn:hover { background: rgba(76, 175, 80, 0.3); transform: scale(1.02); }
-        .mode-btn small { display: block; font-size: 14px; opacity: 0.8; margin-top: 5px; }
         
-        /* ============ VECTORIZADOR INTEGRADO ============ */
-        .vz-instructions { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; margin: 20px 0; line-height: 1.6; }
-        .vz-warning { background: rgba(255, 152, 0, 0.2); border-left: 4px solid #ff9800; padding: 15px; margin: 15px 0; border-radius: 5px; }
-        .vz-tip { background: rgba(76, 175, 80, 0.2); border-left: 4px solid #4CAF50; padding: 15px; margin: 15px 0; border-radius: 5px; }
-        .vz-subpage { display: none; }
-        .vz-subpage.active { display: block; }
-        .vz-file-input-wrapper { text-align: center; margin: 30px 0; }
-        .vz-file-input-wrapper input[type="file"] { display: none; }
-        .vz-canvas-container { text-align: center; margin: 20px 0; position: relative; }
-        .vz-canvas { border: 2px solid #4CAF50; max-width: 100%; touch-action: none; cursor: crosshair; background: #333; }
-        .vz-size-selector { text-align: center; margin: 20px 0; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 10px; }
-        .vz-size-option { display: inline-block; margin: 10px; padding: 15px 25px; background: rgba(255,255,255,0.1); border: 2px solid transparent; border-radius: 5px; cursor: pointer; transition: all 0.3s; }
-        .vz-size-option.selected { border-color: #4CAF50; background: rgba(76, 175, 80, 0.3); }
-        .vz-points-controls { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; }
-        .vz-point-btn { padding: 12px 20px; font-size: 15px; border: 3px solid transparent; border-radius: 8px; cursor: pointer; transition: all 0.3s; text-align: left; color: white; background: rgba(255, 255, 255, 0.1); }
-        .vz-point-btn.active-mode { transform: scale(1.03); box-shadow: 0 0 20px rgba(255,255,255,0.5); animation: vz-pulse 1.5s infinite; background: rgba(255, 152, 0, 0.3); border-color: #ff9800; }
-        @keyframes vz-pulse { 0% { box-shadow: 0 0 10px rgba(255,255,255,0.3); } 50% { box-shadow: 0 0 25px rgba(255,255,255,0.7); } 100% { box-shadow: 0 0 10px rgba(255,255,255,0.3); } }
-        .vz-point-btn small { display: block; font-size: 12px; opacity: 0.8; margin-top: 5px; }
-        .vz-point-status-row { display: flex; justify-content: space-around; margin: 15px 0; flex-wrap: wrap; gap: 10px; }
-        .vz-point-status-item { padding: 8px 12px; border-radius: 5px; font-size: 13px; min-width: 100px; text-align: center; }
-        .vz-point-status-item.placed { background: rgba(76, 175, 80, 0.3); border: 1px solid #4CAF50; }
-        .vz-point-status-item.pending { background: rgba(100, 100, 100, 0.3); border: 1px solid #666; }
-        .vz-marker-controls { display: flex; flex-direction: column; gap: 10px; margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; }
-        .vz-marker-btn { padding: 15px 20px; font-size: 16px; border: 3px solid transparent; border-radius: 8px; cursor: pointer; transition: all 0.3s; text-align: left; color: white; }
-        .vz-marker-btn-start { background: rgba(0, 255, 0, 0.2); border-color: #00ff00; }
-        .vz-marker-btn-goal { background: rgba(255, 0, 0, 0.2); border-color: #ff0000; }
-        .vz-marker-btn.active-mode { transform: scale(1.03); box-shadow: 0 0 20px rgba(255,255,255,0.5); animation: vz-pulse 1.5s infinite; }
-        .vz-marker-btn small { display: block; font-size: 12px; opacity: 0.8; margin-top: 5px; }
-        .vz-marker-status-row { display: flex; justify-content: space-around; margin: 15px 0; flex-wrap: wrap; gap: 10px; }
-        .vz-marker-status-item { padding: 10px 15px; border-radius: 5px; font-size: 14px; min-width: 140px; text-align: center; }
-        .vz-marker-status-item.placed { background: rgba(76, 175, 80, 0.3); border: 1px solid #4CAF50; }
-        .vz-marker-status-item.pending { background: rgba(100, 100, 100, 0.3); border: 1px solid #666; }
-        .vz-status-message { text-align: center; padding: 15px; margin: 15px 0; border-radius: 5px; font-weight: bold; }
-        .vz-status-success { background: rgba(76, 175, 80, 0.2); color: #4CAF50; }
-        .vz-status-info { background: rgba(0, 102, 255, 0.2); color: #0066ff; }
-        .vz-status-warning { background: rgba(255, 152, 0, 0.2); color: #ff9800; }
+        .mode-btn:hover {
+            background: rgba(76, 175, 80, 0.3);
+            transform: scale(1.02);
+        }
         
-        /* ============ JUEGO (EDITOR DE DIBUJO) ============ */
+        .mode-btn small {
+            display: block;
+            font-size: 14px;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+        
+        #image-upload-section {
+            display: none;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(0, 102, 255, 0.1);
+            border: 2px solid #0066ff;
+            border-radius: 10px;
+        }
+        
         #game-screen { display: none; }
         .btn-row { text-align: center; margin: 10px 0; }
         button { padding: 10px 15px; margin: 3px; font-size: 14px; border: 2px solid #333; border-radius: 5px; cursor: pointer; }
@@ -98,20 +70,6 @@
         .generate-btn:disabled { background: #555; cursor: not-allowed; opacity: 0.6; }
         #status { text-align: center; margin: 10px 0; color: #aaa; font-weight: bold; }
         
-        /* ============ CONFIGURACIÓN ============ */
-        #config-screen { display: none; }
-        .room-info-inline { text-align: center; padding: 10px; background: rgba(0, 102, 255, 0.2); border-radius: 5px; margin: 10px 0; font-weight: bold; }
-        
-        .battle-checkbox { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 15px auto; padding: 12px; background: rgba(255, 50, 50, 0.1); border: 2px solid #ff3333; border-radius: 8px; max-width: 400px; }
-        .battle-checkbox input[type="checkbox"] { width: 24px; height: 24px; cursor: pointer; }
-        .battle-checkbox label { color: #ff6666; font-weight: bold; font-size: 15px; cursor: pointer; text-align: left; }
-
-        .color-picker { display: flex; justify-content: center; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
-        .color-btn { width: 45px; height: 45px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform 0.2s; }
-        .color-btn.selected { border-color: white; transform: scale(1.2); box-shadow: 0 0 15px rgba(255,255,255,0.7); }
-        .color-picker.disabled .color-btn { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
-        
-        /* ============ CONTENEDOR 3D ============ */
         #game-container { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: #000; overflow: hidden; }
         .game-btn { position: absolute; padding: 8px 15px; font-size: 14px; background: rgba(0,0,0,0.6); color: white; border: 1px solid white; border-radius: 5px; z-index: 10001; cursor: pointer; }
         #hud { position: absolute; top: 10px; left: 10px; color: #0f0; font-family: monospace; font-size: 16px; text-shadow: 1px 1px 3px #000; z-index: 10000; pointer-events: none; }
@@ -123,20 +81,35 @@
         .victory-content button { padding: 15px 30px; font-size: 18px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; }
         .dpad-btn { position: absolute; width: 60px; height: 60px; background: rgba(255,255,255,0.2); border: 2px solid white; border-radius: 10px; color: white; font-size: 24px; cursor: pointer; user-select: none; touch-action: manipulation; z-index: 10001; }
         .dpad-btn:active { background: rgba(255,255,255,0.5); }
-        #joystick-zone { position: absolute; bottom: 80px; right: 30px; width: 180px; height: 180px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); z-index: 10001; }
-        #tag-btn { display: none; position: absolute; bottom: 280px; right: 30px; width: 80px; height: 80px; border-radius: 50%; background: rgba(255, 50, 50, 0.8); border: 3px solid white; color: white; font-size: 32px; font-weight: bold; z-index: 10001; cursor: pointer; animation: pulse-tag 1s infinite; }
-        @keyframes pulse-tag { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-        .room-info-3d { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; font-size: 14px; z-index: 10001; }
         
-        /* ============ NAVEGACIÓN GENERAL ============ */
-        .nav-buttons { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; flex-wrap: wrap; gap: 10px; }
-        .btn-back { background: #666; color: white; padding: 10px 20px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; }
-        .btn-back:hover { background: #555; }
-        .btn-primary { background: #4CAF50; color: white; padding: 12px 25px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; }
-        .btn-primary:hover { background: #45a049; }
-        .btn-primary:disabled { background: #555; cursor: not-allowed; }
-        .btn-secondary { background: #0066ff; color: white; padding: 12px 25px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; }
-        .btn-secondary:hover { background: #0052cc; }
+        #joystick-zone { position: absolute; bottom: 80px; right: 30px; width: 180px; height: 180px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); z-index: 10001; }
+        
+        #tag-btn {
+            display: none; position: absolute; bottom: 280px; right: 30px;
+            width: 80px; height: 80px; border-radius: 50%;
+            background: rgba(255, 50, 50, 0.8); border: 3px solid white;
+            color: white; font-size: 32px; font-weight: bold;
+            z-index: 10001; cursor: pointer; animation: pulse-tag 1s infinite;
+        }
+        @keyframes pulse-tag { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .room-info { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; font-size: 14px; z-index: 10001; }
+        
+        .battle-checkbox { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 15px auto; padding: 12px; background: rgba(255, 50, 50, 0.1); border: 2px solid #ff3333; border-radius: 8px; max-width: 400px; }
+        .battle-checkbox input[type="checkbox"] { width: 24px; height: 24px; cursor: pointer; }
+        .battle-checkbox label { color: #ff6666; font-weight: bold; font-size: 15px; cursor: pointer; text-align: left; }
+
+        .color-picker { display: flex; justify-content: center; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
+        .color-btn { width: 45px; height: 45px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform 0.2s; }
+        .color-btn.selected { border-color: white; transform: scale(1.2); box-shadow: 0 0 15px rgba(255,255,255,0.7); }
+        
+        .color-picker.disabled .color-btn {
+            opacity: 0.3;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        
+        .input-group { display: flex; justify-content: center; gap: 5px; margin: 10px 0; }
+        .input-group .lobby-input { margin: 0; }
     </style>
 </head>
 <body>
@@ -144,8 +117,7 @@
         <h1>🎨 Labyrinth Lab</h1>
         <p class="subtitle">Multijugador en tiempo real</p>
         
-        <!-- ============ PANTALLA 1: LOBBY ============ -->
-        <div id="lobby-screen" class="screen active">
+        <div id="lobby-screen">
             <h2>🚪 Sala de Espera</h2>
             
             <div class="input-group">
@@ -155,251 +127,51 @@
             
             <div style="margin: 10px 0;"><button class="lobby-btn" onclick="generateRoomCode()">🎲 Generar Código</button></div>
             
-            <div style="margin: 15px 0;">
+            <div id="player-count-section" style="margin: 15px 0;">
                 <label style="color: #aaa;">Número de jugadores:</label><br>
                 <select id="player-count" style="width: 80%; padding: 10px; font-size: 16px; background: #222; color: white; border: 2px solid #4CAF50; border-radius: 5px; margin-top: 5px;">
                     <option value="1">1 jugador (prueba)</option>
-                    <option value="2" selected>2 jugadores</option>
+                    <option value="2">2 jugadores</option>
                     <option value="3">3 jugadores</option>
                     <option value="4">4 jugadores</option>
                     <option value="5">5 jugadores</option>
                 </select>
             </div>
             
+            <div class="mode-selector">
+                <button class="mode-btn" onclick="selectMode('draw')">
+                    🎨 Dibujar laberinto a mano
+                    <small>Dibuja tu laberinto en el canvas</small>
+                </button>
+                <button class="mode-btn" onclick="selectMode('image')">
+                    📷 Procesar imagen vectorizada
+                    <small>Carga un archivo JSON de Laberinto Vectorizer</small>
+                </button>
+            </div>
+            
+            <div id="image-upload-section">
+                <h3 style="margin-bottom: 15px;">📁 Cargar archivo JSON</h3>
+                <input type="file" id="json-file-input" accept=".json" style="width: 100%; padding: 10px; background: #222; color: white; border: 1px solid #555; border-radius: 5px;">
+                <p id="json-load-status" style="margin-top: 10px; color: #aaa;"></p>
+            </div>
+            
             <button class="lobby-btn" id="join-btn" onclick="joinRoom()" style="width: 80%; font-size: 18px; margin-top: 15px;">🎮 Unirse / Crear Sala</button>
             <p id="lobby-status" style="margin-top: 15px; color: #4CAF50;"></p>
         </div>
-        
-        <!-- ============ PANTALLA 2: SELECCIÓN DE MODO ============ -->
-        <div id="mode-screen" class="screen">
-            <div class="room-info-inline" id="room-display-mode">Sala: ---</div>
-            <h2>¿Cómo quieres crear el laberinto?</h2>
-            
-            <div class="mode-selector">
-                <button class="mode-btn" onclick="selectMode('draw')">
-                    🎨 Dibujar a mano alzada
-                    <small>Dibuja tu laberinto directamente en la pantalla</small>
-                </button>
-                <button class="mode-btn" onclick="selectMode('image')">
-                    📷 Procesar una foto
-                    <small>Toma foto a un laberinto dibujado en papel y lo convertimos automáticamente</small>
-                </button>
-            </div>
-            
-            <div class="nav-buttons">
-                <button class="btn-back" onclick="leaveRoom()">← Salir de la sala</button>
-            </div>
-        </div>
-        
-        <!-- ============ PANTALLA 3: VECTORIZADOR (4 sub-páginas) ============ -->
-        <div id="vectorizer-screen" class="screen">
-            <div class="room-info-inline" id="room-display-vz">Sala: ---</div>
-            
-            <!-- VZ SUB-PÁGINA 1: Bienvenida -->
-            <div id="vz-page1" class="vz-subpage active">
-                <h2>📷 ¡Desarrollemos tu dibujo!</h2>
-                
-                <div class="vz-instructions">
-                    <p><strong>Vamos a convertir tu dibujo de laberinto en un juego 3D.</strong></p>
-                    
-                    <div class="vz-warning">
-                        <strong>⚠️ Importante:</strong>
-                        <ul style="margin-top: 10px; margin-left: 20px;">
-                            <li>Procura que la imagen esté lo más limpia posible</li>
-                            <li>Evita borrones o manchas innecesarias (al procesarlas, serán entendidas como paredes)</li>
-                            <li>Evita sombras para que no sea confuso</li>
-                            <li>Las líneas deben ser lo más contrastadas posibles</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="vz-tip">
-                        <strong>💡 Tip para la foto:</strong>
-                        <ul style="margin-top: 10px; margin-left: 20px;">
-                            <li>Toma la foto desde arriba, lo más perpendicular posible</li>
-                            <li>Apóyate de la malla de la aplicación de cámara</li>
-                            <li>Asegúrate de que se vean bien las 4 esquinas del papel</li>
-                        </ul>
-                    </div>
-                </div>
-                
-                <div class="vz-file-input-wrapper">
-                    <label for="vz-file-input" class="btn-primary" style="display: inline-block;">📁 Seleccionar Imagen</label>
-                    <input type="file" id="vz-file-input" accept="image/*">
-                    <p id="vz-file-name" style="margin-top: 15px; color: #aaa;"></p>
-                </div>
-                
-                <div class="nav-buttons">
-                    <button class="btn-back" onclick="goToModeScreen()">← Volver</button>
-                    <button id="vz-btn-start" class="btn-primary" disabled>Empecemos →</button>
-                </div>
-            </div>
-            
-            <!-- VZ SUB-PÁGINA 2: Calibración -->
-            <div id="vz-page2" class="vz-subpage">
-                <h2>📍 Ubica las 4 esquinas</h2>
-                
-                <div class="vz-instructions">
-                    <p><strong>Ubica los cuatro puntos en los extremos del papel.</strong></p>
-                    <p style="color: #ff9800; margin-top: 10px;">⚠️ Lo que quede dentro de estos puntos será procesado como parte del laberinto.</p>
-                </div>
-                
-                <div class="vz-canvas-container">
-                    <canvas id="vz-main-canvas" class="vz-canvas"></canvas>
-                </div>
-                
-                <div class="vz-points-controls">
-                    <button id="vz-btn-point-1" class="vz-point-btn">
-                        🔴 Punto 1 (Esquina 1)
-                        <small>Toca este botón y luego toca la imagen</small>
-                    </button>
-                    <button id="vz-btn-point-2" class="vz-point-btn">
-                        🔴 Punto 2 (Esquina 2)
-                        <small>Toca este botón y luego toca la imagen</small>
-                    </button>
-                    <button id="vz-btn-point-3" class="vz-point-btn">
-                        🔴 Punto 3 (Esquina 3)
-                        <small>Toca este botón y luego toca la imagen</small>
-                    </button>
-                    <button id="vz-btn-point-4" class="vz-point-btn">
-                        🔴 Punto 4 (Esquina 4)
-                        <small>Toca este botón y luego toca la imagen</small>
-                    </button>
-                </div>
-                
-                <div class="vz-point-status-row">
-                    <div id="vz-point-1-status" class="vz-point-status-item pending">Punto 1: ❌</div>
-                    <div id="vz-point-2-status" class="vz-point-status-item pending">Punto 2: ❌</div>
-                    <div id="vz-point-3-status" class="vz-point-status-item pending">Punto 3: ❌</div>
-                    <div id="vz-point-4-status" class="vz-point-status-item pending">Punto 4: ❌</div>
-                </div>
-                
-                <div class="vz-status-message vz-status-warning" id="vz-points-status">
-                    👆 Presiona un botón para comenzar a ubicar los puntos
-                </div>
-                
-                <div class="vz-size-selector">
-                    <h3>Tamaño de la cuadrícula:</h3>
-                    <p style="color: #aaa; margin: 10px 0; font-size: 14px;">
-                        Define cuántas celdas tendrá tu laberinto digital.<br>
-                        Más grande = más detalle, pero requiere trazo más preciso.
-                    </p>
-                    <div class="vz-size-option" data-size="15">15×15<br><small>Básico</small></div>
-                    <div class="vz-size-option selected" data-size="21">21×21<br><small>Recomendado</small></div>
-                    <div class="vz-size-option" data-size="31">31×31<br><small>Detallado</small></div>
-                </div>
-                
-                <div class="nav-buttons">
-                    <button class="btn-back" onclick="showVZPage(1)">← Atrás</button>
-                    <button id="vz-btn-calibrate" class="btn-primary" disabled>¡Listos! →</button>
-                </div>
-            </div>
-            
-            <!-- VZ SUB-PÁGINA 3: Revisión y Corrección -->
-            <div id="vz-page3" class="vz-subpage">
-                <h2>🔍 ¿Necesitas corregir algo?</h2>
-                
-                <div class="vz-instructions">
-                    <p>Revisa la cuadrícula generada. Si hay errores (manchas detectadas como paredes, caminos bloqueados), puedes corregirlos ahora.</p>
-                </div>
-                
-                <div class="vz-canvas-container">
-                    <canvas id="vz-grid-canvas" class="vz-canvas"></canvas>
-                </div>
-                
-                <p style="color: #aaa; margin: 10px 0; font-size: 14px; text-align: center;">
-                    🔄 Toca cualquier celda para cambiarla entre pared (negro) y camino (blanco)
-                </p>
-                
-                <div class="nav-buttons">
-                    <button class="btn-back" onclick="showVZPage(2)">← Atrás</button>
-                    <button class="btn-primary" onclick="showVZPage(4)">Continuar →</button>
-                </div>
-            </div>
-            
-            <!-- VZ SUB-PÁGINA 4: Inicio y Meta -->
-            <div id="vz-page4" class="vz-subpage">
-                <h2>🎯 Marca el Inicio y la Meta</h2>
-                
-                <div class="vz-instructions">
-                    <p>Define dónde comenzará el anfitrión y dónde está la meta.</p>
-                    <p style="margin-top: 10px; color: #ff9800;">
-                        💡 Puedes cambiar la ubicación cuantas veces quieras.
-                    </p>
-                </div>
-                
-                <div class="vz-marker-controls">
-                    <button id="vz-btn-place-start" class="vz-marker-btn vz-marker-btn-start">
-                        📍 Colocar / Mover el INICIO
-                        <small>Toca este botón y luego toca una celda blanca</small>
-                    </button>
-                    <button id="vz-btn-place-goal" class="vz-marker-btn vz-marker-btn-goal">
-                        🎯 Colocar / Mover la META
-                        <small>Toca este botón y luego toca una celda blanca</small>
-                    </button>
-                </div>
-                
-                <div class="vz-marker-status-row">
-                    <div id="vz-start-status" class="vz-marker-status-item pending">📍 Inicio: Sin colocar</div>
-                    <div id="vz-goal-status" class="vz-marker-status-item pending">🎯 Meta: Sin colocar</div>
-                </div>
-                
-                <div class="vz-canvas-container">
-                    <canvas id="vz-markers-canvas" class="vz-canvas"></canvas>
-                </div>
-                
-                <div class="vz-status-message vz-status-warning" id="vz-markers-status">
-                    👆 Presiona un botón para comenzar
-                </div>
-                
-                <div class="nav-buttons">
-                    <button class="btn-back" onclick="showVZPage(3)">← Atrás</button>
-                    <button id="vz-btn-finalize" class="btn-primary" disabled>Finalizar →</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- ============ PANTALLA 4: EDITOR DE DIBUJO (solo modo draw) ============ -->
-        <div id="game-screen" class="screen">
-            <div class="room-info-inline" id="room-display">Sala: ---</div>
+
+        <div id="game-screen">
+            <div class="room-info" id="room-display">Sala: ---</div>
             <h2>🖌️ Editor del Laberinto</h2>
-            <p id="host-instruction" style="text-align: center; color: #4CAF50; font-weight: bold;">👑 Eres el ANFITRIÓN. Dibuja el laberinto y coloca la META.</p>
+            <p id="host-instruction" style="text-align: center; color: #4CAF50; font-weight: bold; display: none;">👑 Eres el ANFITRIÓN. Dibuja el laberinto y coloca la META.</p>
             <p id="guest-instruction" style="text-align: center; color: #0066ff; font-weight: bold; display: none;">👥 Eres INVITADO. Espera a que el anfitrión genere el juego.</p>
             
-            <div class="btn-row">
-                <button id="btn-fill-white" style="background: white; color: black;">⬜ Fondo blanco</button>
-                <button id="btn-fill-black" style="background: black; color: white;">⬛ Fondo negro</button>
-            </div>
-            <div class="btn-row">
-                <button id="btn-draw-white" style="background: white; color: black;">✏️ Dibujar blanco</button>
-                <button id="btn-draw-black" style="background: black; color: white;">✏️ Dibujar negro</button>
-            </div>
-            
-            <div class="marker-section">
-                <label style="font-weight: bold;">📍 Meta del laberinto:</label><br>
-                <button id="btn-place-goal" style="background: #28a745; color: white;">🎯 Colocar META</button>
-            </div>
-            
-            <canvas id="draw-canvas" width="420" height="420"></canvas>
-            
-            <div class="nav-buttons">
-                <button class="btn-back" onclick="goToModeScreen()">← Cambiar modo</button>
-                <button id="btn-to-config" class="btn-primary" onclick="goToConfig()">Continuar →</button>
-            </div>
-            <div id="status" style="margin-top: 10px;">Dibuja tu laberinto...</div>
-        </div>
-        
-        <!-- ============ PANTALLA 5: CONFIGURACIÓN ============ -->
-        <div id="config-screen" class="screen">
-            <div class="room-info-inline" id="room-display-config">Sala: ---</div>
-            <h2>⚙️ Configuración Final</h2>
-            
-            <div id="config-host-battle-section" class="battle-checkbox">
+            <div id="host-battle-section" class="battle-checkbox" style="display: none;">
                 <input type="checkbox" id="battle-mode-game">
-                <label for="battle-mode-game">⚔️ Modo Todos contra Todos<br><small style="color: #aaa; font-weight: normal;">(Todos tendrán palo para taggear)</small></label>
+                <label for="battle-mode-game">⚔️ Activar Modo Todos contra Todos<br><small style="color: #aaa; font-weight: normal;">(Todos tendrán palo para taggear al iniciar)</small></label>
             </div>
 
             <div class="marker-section" style="background: rgba(255,255,255,0.05); border: 1px solid #4CAF50; margin-bottom: 20px;">
-                <label style="font-weight: bold; color: #4CAF50;">🎨 Elige tu color:</label><br>
+                <label style="font-weight: bold; color: #4CAF50;">🎨 Elige tu color para la partida:</label><br>
                 <div class="color-picker" id="game-color-picker">
                     <div class="color-btn" style="background: #ff0000;" data-color="#ff0000"></div>
                     <div class="color-btn" style="background: #0066ff;" data-color="#0066ff"></div>
@@ -409,14 +181,32 @@
                     <div class="color-btn" style="background: #ff8800;" data-color="#ff8800"></div>
                     <div class="color-btn" style="background: #ffffff;" data-color="#ffffff"></div>
                 </div>
-                <p id="color-selection-status" style="font-size: 14px; color: #ff6666; font-weight: bold;">⚠️ Selecciona un color</p>
+                <p id="color-selection-status" style="font-size: 14px; color: #ff6666; font-weight: bold;">⚠️ Selecciona un color para habilitar el botón "Listo"</p>
+            </div>
+
+            <div id="draw-controls" style="display: none;">
+                <div class="btn-row">
+                    <button id="btn-fill-white" style="background: white; color: black;">⬜ Fondo blanco</button>
+                    <button id="btn-fill-black" style="background: black; color: white;">⬛ Fondo negro</button>
+                </div>
+                <div class="btn-row">
+                    <button id="btn-draw-white" style="background: white; color: black;">✏️ Dibujar blanco</button>
+                    <button id="btn-draw-black" style="background: black; color: white;">✏️ Dibujar negro</button>
+                </div>
+                
+                <div class="marker-section">
+                    <label style="font-weight: bold;">📍 Meta del laberinto:</label><br>
+                    <button id="btn-place-goal" style="background: #28a745; color: white; display: none;">🎯 Colocar META (Solo Anfitrión)</button>
+                </div>
             </div>
             
+            <canvas id="draw-canvas" width="420" height="420"></canvas>
+            
             <div class="settings" id="settings-panel">
-                <h3>🎨 Personalización del laberinto</h3>
+                <h3>⚙️ Personalización (Solo Anfitrión)</h3>
                 <div class="setting-row"><label>🧱 Grosor: <span id="thickness-val">1.0x</span></label><input type="range" id="thickness-slider" min="0.5" max="2.0" step="0.1" value="1.0"></div>
                 <div class="setting-row"><label>📏 Altura: <span id="height-val">2.0m</span></label><input type="range" id="height-slider" min="1.0" max="4.0" step="0.5" value="2.0"></div>
-                <div class="setting-row"><label>🧱 Material:</label>
+                <div class="setting-row"><label>🧱 Material de paredes:</label>
                     <select id="material-select">
                         <option value="stone">🪨 Piedra</option>
                         <option value="brick">🧱 Ladrillo</option>
@@ -428,16 +218,16 @@
                         <option value="snow">❄️ Nieve</option>
                     </select>
                 </div>
-                <div class="setting-row"><label>🟫 Piso:</label>
+                <div class="setting-row"><label>🟫 Textura del piso:</label>
                     <select id="floor-select">
                         <option value="dirt">🟫 Tierra</option>
                         <option value="tile">🔲 Loseta</option>
                         <option value="woodfloor">🪵 Madera</option>
                         <option value="sand">🏖️ Arena</option>
                         <option value="grass">🌿 Hierba</option>
-                        <option value="metalgrid">⚙️ Rejilla</option>
-                        <option value="stonefloor">🪨 Piedra</option>
-                        <option value="marble">♟️ Mármol</option>
+                        <option value="metalgrid">⚙️ Rejilla metálica</option>
+                        <option value="stonefloor">🪨 Piedra lisa</option>
+                        <option value="marble">♟️ Mármol ajedrez</option>
                     </select>
                 </div>
                 <div class="setting-row"><label>💡 Luz ambiental: <span id="ambient-val">100%</span></label><input type="range" id="ambient-slider" min="0" max="200" step="10" value="100"></div>
@@ -446,20 +236,16 @@
             </div>
             
             <p id="players-ready-status" style="margin: 15px 0; color: #4CAF50; font-weight: bold; text-align: center;"></p>
-            <button id="btn-host-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 10px auto; background: #28a745;" disabled>✅ Estoy listo</button>
-            <button id="btn-guest-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 10px auto; background: #28a745; display: none;" disabled>✅ Listo para jugar</button>
+            <button id="btn-host-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 10px auto; background: #28a745; display: none;" disabled>✅ Estoy listo para generar</button>
+            <button id="btn-ready" class="lobby-btn" style="width: 80%; font-size: 18px; margin: 10px auto; background: #28a745; display: none;" disabled>✅ Listo para jugar</button>
             
             <button id="btn-generate" class="generate-btn" style="display: none;" disabled>🎮 Generar 3D e Iniciar</button>
-            
-            <div class="nav-buttons">
-                <button class="btn-back" onclick="goBackFromConfig()">← Atrás</button>
-            </div>
+            <div id="status" style="margin-top: 10px;">Esperando...</div>
         </div>
     </div>
     
-    <!-- ============ CONTENEDOR 3D ============ -->
     <div id="game-container">
-        <div class="room-info-3d" id="room-display-3d">Sala: ---</div>
+        <div class="room-info" id="room-display-3d">Sala: ---</div>
         <button id="btn-exit" class="game-btn" style="top: 10px; right: 10px;">✖️ Salir</button>
         <button id="btn-sound" class="game-btn" style="top: 10px; left: 50%; transform: translateX(-50%);">🔊 Sonido ON</button>
         <button id="btn-map" class="game-btn" style="top: 50px; right: 10px;">🗺️ Mapa</button>
@@ -480,7 +266,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getDatabase, ref, set, update, onValue, get, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+        import { getDatabase, ref, set, update, onValue, get, onDisconnect } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD5zPrdCB4GYZ6O0QORDNZA756YvAW7ztQ",
@@ -502,132 +288,6 @@
             alert("ERROR: No se pudo conectar a Firebase.");
         }
 
-        // ============================================================
-        // ESTADO GLOBAL DEL JUEGO
-        // ============================================================
-        let playerId = localStorage.getItem('ll_playerId') || Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('ll_playerId', playerId);
-        
-        let roomId = "", isHost = false;
-        let myColor = localStorage.getItem('ll_color') || "#ff0000";
-        let gameMode = null; // 'draw' o 'image'
-        let GRID_SIZE = 21;
-        let CELL_PX = 20;
-        let grid = [];
-        let goal = null;
-        let startPosition = null;
-        let gameStarted = false, gameWon = false;
-        let players = {};
-        let localPlayer = { x: 0, z: 0, yaw: 0, pitch: 0, speed: 3.0, rotSpeed: 2.0, hasStick: false };
-        let lastDbUpdate = 0, stepCooldown = 0;
-        let joystickVector = { x: 0, y: 0 };
-        let mapVisible = false;
-        let battleRoyaleMode = false;
-        let colorSelectedInRoom = false;
-        let respawnCooldown = 0;
-        
-        window.gameKeys = { up: false, down: false, left: false, right: false };
-
-        // ============================================================
-        // ESTADO DEL VECTORIZADOR (prefijado con vz_)
-        // ============================================================
-        let vz_originalImage = null;
-        let vz_resizedImage = null;
-        let vz_cornerPoints = [null, null, null, null];
-        let vz_gridSize = 21;
-        let vz_grid = [];
-        let vz_startCell = null;
-        let vz_goalCell = null;
-        let vz_activePointMode = null;
-        let vz_activeMarkerMode = null;
-        const VZ_MAX_DIMENSION = 1200;
-
-        // ============================================================
-        // NAVEGACIÓN ENTRE PANTALLAS
-        // ============================================================
-        function showScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
-            window.scrollTo(0, 0);
-        }
-        
-        function showVZPage(pageNum) {
-            document.querySelectorAll('.vz-subpage').forEach(p => p.classList.remove('active'));
-            document.getElementById(`vz-page${pageNum}`).classList.add('active');
-            window.scrollTo(0, 0);
-            
-            if (pageNum === 2) {
-                vzUpdatePointButtonsUI();
-                vzDrawImageWithPoints();
-            } else if (pageNum === 3) {
-                vzDrawGrid();
-            } else if (pageNum === 4) {
-                vz_activeMarkerMode = null;
-                vzUpdateMarkerButtonsUI();
-                vzDrawMarkers();
-            }
-        }
-        
-        function goToModeScreen() {
-            showScreen('mode-screen');
-            document.getElementById('room-display-mode').textContent = `Sala: ${roomId} ${isHost ? '(Anfitrión)' : '(Invitado)'}`;
-        }
-        
-        function goToConfig() {
-            showScreen('config-screen');
-            document.getElementById('room-display-config').textContent = `Sala: ${roomId} ${isHost ? '(Anfitrión)' : '(Invitado)'}`;
-            
-            // Mostrar/ocultar elementos según rol
-            if (isHost) {
-                document.getElementById('config-host-battle-section').style.display = 'flex';
-                document.getElementById('btn-host-ready').style.display = 'block';
-                document.getElementById('btn-guest-ready').style.display = 'none';
-                document.getElementById('btn-generate').style.display = 'block';
-                document.getElementById('settings-panel').style.display = 'block';
-            } else {
-                document.getElementById('config-host-battle-section').style.display = 'none';
-                document.getElementById('btn-host-ready').style.display = 'none';
-                document.getElementById('btn-guest-ready').style.display = 'block';
-                document.getElementById('btn-generate').style.display = 'none';
-                document.getElementById('settings-panel').style.display = 'none';
-            }
-            
-            // Resetear selección de color
-            colorSelectedInRoom = false;
-            document.querySelectorAll('#game-color-picker .color-btn').forEach(b => b.classList.remove('selected'));
-            const statusEl = document.getElementById('color-selection-status');
-            statusEl.textContent = '⚠️ Selecciona un color';
-            statusEl.style.color = '#ff6666';
-            
-            // Cargar color guardado
-            const savedColor = localStorage.getItem('ll_color');
-            if (savedColor) {
-                const savedBtn = document.querySelector(`#game-color-picker .color-btn[data-color="${savedColor}"]`);
-                if (savedBtn) savedBtn.click();
-            }
-        }
-        
-        function goBackFromConfig() {
-            if (gameMode === 'draw') {
-                showScreen('game-screen');
-                redrawCanvas();
-            } else {
-                goToModeScreen();
-            }
-        }
-        
-        window.leaveRoom = async () => {
-            if (roomId && db) {
-                try {
-                    await remove(ref(db, `rooms/${roomId}/players/${playerId}`));
-                } catch (e) { console.error(e); }
-            }
-            location.reload();
-        };
-
-        // ============================================================
-        // AUDIO
-        // ============================================================
         let audioCtx;
         let soundOn = true;
         function initAudio() {
@@ -663,8 +323,11 @@
         }
 
         // ============================================================
-        // FUNCIONES AUXILIARES
+        // NUEVO: VARIABLES DINÁMICAS PARA GRID SIZE
         // ============================================================
+        let GRID_SIZE = 21; // Valor por defecto, se actualiza dinámicamente
+        let CELL_PX = 20; // Se calcula según GRID_SIZE
+        
         function ensureGrid2D(rawGrid, size) {
             const newGrid = Array(size).fill(null).map(() => Array(size).fill(0));
             if (!rawGrid) return newGrid;
@@ -678,6 +341,9 @@
             return newGrid;
         }
 
+        // ============================================================
+        // ALGORITMO DE DETECCIÓN Y REPARACIÓN DE ESPACIOS CERRADOS
+        // ============================================================
         function fixClosedSpaces(grid, goalPos, size) {
             const reachable = Array(size).fill(null).map(() => Array(size).fill(false));
             const queue = [{x: goalPos.x, y: goalPos.y}];
@@ -698,15 +364,19 @@
             const unreachable = [];
             for (let y = 0; y < size; y++) {
                 for (let x = 0; x < size; x++) {
-                    if (grid[y][x] === 0 && !reachable[y][x]) unreachable.push({x, y});
+                    if (grid[y][x] === 0 && !reachable[y][x]) {
+                        unreachable.push({x, y});
+                    }
                 }
             }
             
             if (unreachable.length === 0) return { fixed: false, wallsBroken: 0 };
             
             let wallsBroken = 0;
+            
             for (const startCell of unreachable) {
                 if (reachable[startCell.y][startCell.x]) continue;
+                
                 const visited = Array(size).fill(null).map(() => Array(size).fill(false));
                 const bfsQueue = [startCell];
                 visited[startCell.y][startCell.x] = true;
@@ -714,6 +384,7 @@
                 
                 while (bfsQueue.length > 0 && !found) {
                     const curr = bfsQueue.shift();
+                    
                     for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
                         const nx = curr.x + dx, ny = curr.y + dy;
                         if (nx < 0 || nx >= size || ny < 0 || ny >= size) continue;
@@ -722,7 +393,8 @@
                         if (grid[ny][nx] === 1) {
                             for (const [dx2, dy2] of [[0,1],[0,-1],[1,0],[-1,0]]) {
                                 const nnx = nx + dx2, nny = ny + dy2;
-                                if (nnx >= 0 && nnx < size && nny >= 0 && nny < size && reachable[nny][nnx]) {
+                                if (nnx >= 0 && nnx < size && nny >= 0 && nny < size 
+                                    && reachable[nny][nnx]) {
                                     grid[ny][nx] = 0;
                                     reachable[ny][nx] = true;
                                     wallsBroken++;
@@ -732,7 +404,8 @@
                                         const c = newQueue.shift();
                                         for (const [ddx, ddy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
                                             const mx = c.x + ddx, my = c.y + ddy;
-                                            if (mx >= 0 && mx < size && my >= 0 && my < size && !reachable[my][mx] && grid[my][mx] === 0) {
+                                            if (mx >= 0 && mx < size && my >= 0 && my < size 
+                                                && !reachable[my][mx] && grid[my][mx] === 0) {
                                                 reachable[my][mx] = true;
                                                 newQueue.push({x: mx, y: my});
                                             }
@@ -749,41 +422,59 @@
                     }
                 }
             }
+            
             return { fixed: wallsBroken > 0, wallsBroken };
         }
 
         // ============================================================
-        // GENERADORES DE TEXTURAS
+        // GENERADORES DE TEXTURAS PROCEDURALES
         // ============================================================
         const textureCache = {};
         
         function seededRandom(seed) {
             let s = seed;
-            return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+            return () => {
+                s = (s * 9301 + 49297) % 233280;
+                return s / 233280;
+            };
         }
         
         function generateWallTexture(type) {
             if (textureCache[`wall_${type}`]) return textureCache[`wall_${type}`];
+            
             const canvas = document.createElement('canvas');
             canvas.width = 256; canvas.height = 256;
             const ctx = canvas.getContext('2d');
             const rand = seededRandom(type.length * 12345);
             
-            const baseColors = {
-                stone: '#6b6b6b', brick: '#8b4513', wood: '#6b4423', metal: '#888',
-                crystal: '#2a4d8f', moss: '#5a5a4a', lava: '#2a1a1a', snow: '#e8f0ff'
-            };
-            ctx.fillStyle = baseColors[type] || '#6b6b6b';
-            ctx.fillRect(0, 0, 256, 256);
-            
-            for (let i = 0; i < 40; i++) {
-                const x = rand() * 256, y = rand() * 256;
-                const size = 20 + rand() * 40;
-                const shade = 80 + rand() * 80;
-                ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
-                ctx.beginPath();
-                ctx.ellipse(x, y, size, size * 0.7, rand() * Math.PI, 0, Math.PI * 2);
-                ctx.fill();
+            if (type === 'stone') {
+                ctx.fillStyle = '#6b6b6b';
+                ctx.fillRect(0, 0, 256, 256);
+                for (let i = 0; i < 40; i++) {
+                    const x = rand() * 256, y = rand() * 256;
+                    const size = 20 + rand() * 40;
+                    const shade = 80 + rand() * 80;
+                    ctx.fillStyle = `rgb(${shade},${shade},${shade})`;
+                    ctx.beginPath();
+                    ctx.ellipse(x, y, size, size * 0.7, rand() * Math.PI, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = `rgba(0,0,0,0.3)`;
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+                for (let i = 0; i < 15; i++) {
+                    ctx.strokeStyle = `rgba(0,0,0,${0.2 + rand() * 0.3})`;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    let x = rand() * 256, y = rand() * 256;
+                    ctx.moveTo(x, y);
+                    for (let j = 0; j < 5; j++) {
+                        x += (rand() - 0.5) * 30;
+                        y += (rand() - 0.5) * 30;
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                }
             }
             
             const texture = new THREE.CanvasTexture(canvas);
@@ -796,24 +487,22 @@
         
         function generateFloorTexture(type) {
             if (textureCache[`floor_${type}`]) return textureCache[`floor_${type}`];
+            
             const canvas = document.createElement('canvas');
             canvas.width = 256; canvas.height = 256;
             const ctx = canvas.getContext('2d');
             const rand = seededRandom(type.length * 54321);
             
-            const baseColors = {
-                dirt: '#6b4423', tile: '#3a3a3a', woodfloor: '#8b5a2b', sand: '#d4b878',
-                grass: '#3a6b2a', metalgrid: '#2a2a2a', stonefloor: '#5a5a5a', marble: '#aaaaaa'
-            };
-            ctx.fillStyle = baseColors[type] || '#6b4423';
-            ctx.fillRect(0, 0, 256, 256);
-            
-            for (let i = 0; i < 500; i++) {
-                const shade = 80 + rand() * 60;
-                ctx.fillStyle = `rgb(${shade + 20},${shade - 20},${shade - 50})`;
-                ctx.beginPath();
-                ctx.arc(rand() * 256, rand() * 256, 1 + rand() * 3, 0, Math.PI * 2);
-                ctx.fill();
+            if (type === 'dirt') {
+                ctx.fillStyle = '#6b4423';
+                ctx.fillRect(0, 0, 256, 256);
+                for (let i = 0; i < 500; i++) {
+                    const shade = 80 + rand() * 60;
+                    ctx.fillStyle = `rgb(${shade + 20},${shade - 20},${shade - 50})`;
+                    ctx.beginPath();
+                    ctx.arc(rand() * 256, rand() * 256, 1 + rand() * 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
             
             const texture = new THREE.CanvasTexture(canvas);
@@ -824,15 +513,94 @@
             return texture;
         }
 
+        let playerId = localStorage.getItem('ll_playerId') || Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('ll_playerId', playerId);
+        
+        let roomId = "", isHost = false;
+        let myColor = localStorage.getItem('ll_color') || "#ff0000";
+        let grid = [];
+        let goal = null;
+        let startPosition = null; // NUEVO: Posición de inicio desde JSON
+        let gameStarted = false, gameWon = false;
+        let players = {};
+        let localPlayer = { x: 0, z: 0, yaw: 0, pitch: 0, speed: 3.0, rotSpeed: 2.0, hasStick: false };
+        let lastDbUpdate = 0, stepCooldown = 0;
+        let joystickVector = { x: 0, y: 0 };
+        let mapVisible = false;
+        let battleRoyaleMode = false;
+        let colorSelectedInRoom = false;
+        let respawnCooldown = 0;
+        let gameMode = 'draw'; // 'draw' o 'image'
+        let loadedJSON = null; // NUEVO: JSON cargado desde archivo
+
+        window.gameKeys = { up: false, down: false, left: false, right: false };
+
+        const lobbyScreen = document.getElementById('lobby-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const roomInput = document.getElementById('room-input');
+        const lobbyStatus = document.getElementById('lobby-status');
+
         // ============================================================
-        // LOBBY
+        // NUEVO: SELECCIÓN DE MODO (DIBUJAR O PROCESAR IMAGEN)
         // ============================================================
+        window.selectMode = (mode) => {
+            gameMode = mode;
+            const imageUploadSection = document.getElementById('image-upload-section');
+            
+            if (mode === 'image') {
+                imageUploadSection.style.display = 'block';
+            } else {
+                imageUploadSection.style.display = 'none';
+                loadedJSON = null;
+            }
+        };
+
+        // ============================================================
+        // NUEVO: CARGA DE ARCHIVO JSON
+        // ============================================================
+        const jsonFileInput = document.getElementById('json-file-input');
+        const jsonLoadStatus = document.getElementById('json-load-status');
+        
+        jsonFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const json = JSON.parse(event.target.result);
+                    
+                    // Validar estructura del JSON
+                    if (!json.gridSize || !json.grid || !json.start || !json.goal) {
+                        throw new Error('JSON inválido: faltan campos requeridos');
+                    }
+                    
+                    loadedJSON = json;
+                    GRID_SIZE = json.gridSize;
+                    CELL_PX = Math.floor(420 / GRID_SIZE);
+                    
+                    jsonLoadStatus.textContent = `✅ JSON cargado: ${GRID_SIZE}x${GRID_SIZE} celdas`;
+                    jsonLoadStatus.style.color = '#4CAF50';
+                    
+                    console.log('📦 JSON cargado:', json);
+                } catch (error) {
+                    jsonLoadStatus.textContent = `❌ Error: ${error.message}`;
+                    jsonLoadStatus.style.color = '#ff6666';
+                    loadedJSON = null;
+                }
+            };
+            reader.readAsText(file);
+        });
+
         window.generateRoomCode = () => { 
             roomInput.value = "LAB-" + Math.random().toString(36).substr(2, 4).toUpperCase(); 
         };
 
         window.copyRoomCode = async () => {
-            if (!roomInput.value) { alert("Primero genera o escribe un código."); return; }
+            if (!roomInput.value) {
+                alert("Primero genera o escribe un código de sala.");
+                return;
+            }
             try {
                 await navigator.clipboard.writeText(roomInput.value);
                 const btn = document.getElementById('copy-btn');
@@ -841,33 +609,67 @@
             } catch (err) {
                 roomInput.select();
                 document.execCommand('copy');
+                alert("Código copiado al portapapeles.");
             }
         };
 
-        const roomInput = document.getElementById('room-input');
-        const lobbyStatus = document.getElementById('lobby-status');
+        document.querySelectorAll('#game-color-picker .color-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const colorPicker = document.getElementById('game-color-picker');
+                if (colorPicker.classList.contains('disabled')) return;
+                
+                document.querySelectorAll('#game-color-picker .color-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                myColor = btn.dataset.color;
+                localStorage.setItem('ll_color', myColor);
+                colorSelectedInRoom = true;
+                
+                const statusEl = document.getElementById('color-selection-status');
+                statusEl.textContent = `✅ Color seleccionado.`;
+                statusEl.style.color = '#4CAF50';
+
+                if (roomId && playerId) {
+                    update(ref(db, `rooms/${roomId}/players/${playerId}`), { color: myColor });
+                }
+            });
+        });
 
         window.joinRoom = async () => {
             initAudio();
             if (!db) { alert("Firebase no se inicializó."); return; }
+            
+            // Validar que si el modo es 'image', se haya cargado un JSON
+            if (gameMode === 'image' && !loadedJSON) {
+                alert("Por favor, carga un archivo JSON válido antes de continuar.");
+                return;
+            }
             
             try {
                 roomId = roomInput.value.trim().toUpperCase();
                 if (!roomId) { alert("Ingresa un código de sala"); return; }
                 
                 const maxPlayers = parseInt(document.getElementById('player-count').value);
+                
                 lobbyStatus.textContent = "Conectando...";
                 document.getElementById('join-btn').disabled = true;
 
                 const roomRef = ref(db, `rooms/${roomId}`);
                 const snapshot = await get(roomRef);
                 
-                // Inicializar GRID_SIZE por defecto
-                GRID_SIZE = 21;
-                grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0));
-                goal = null;
-                startPosition = null;
-                CELL_PX = 20;
+                // Si el modo es 'image', usar el JSON cargado
+                if (gameMode === 'image' && loadedJSON) {
+                    GRID_SIZE = loadedJSON.gridSize;
+                    grid = ensureGrid2D(loadedJSON.grid, GRID_SIZE);
+                    goal = loadedJSON.goal;
+                    startPosition = loadedJSON.start;
+                    CELL_PX = Math.floor(420 / GRID_SIZE);
+                } else {
+                    GRID_SIZE = 21;
+                    grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0));
+                    goal = null;
+                    startPosition = null;
+                    CELL_PX = 20;
+                }
                 
                 if (!snapshot.exists()) {
                     isHost = true;
@@ -876,552 +678,250 @@
                         maxPlayers: maxPlayers,
                         battleRoyale: false,
                         hostDesignReady: false,
-                        gridSize: GRID_SIZE,
+                        gridSize: GRID_SIZE, // NUEVO: Guardar gridSize en Firebase
                         grid: grid, 
-                        goal: null,
-                        startPosition: null,
+                        goal: goal,
+                        startPosition: startPosition, // NUEVO: Guardar startPosition en Firebase
                         settings: { thickness: 1.0, height: 2.0, material: 'stone', floor: 'dirt', ambient: 1.0, playerLight: 5.0, lightDist: 50 },
                         gameStarted: false,
                         players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: true, ready: false } }
                     });
                 } else {
                     isHost = false;
-                    // Leer gridSize existente si es invitado
-                    const existingData = snapshot.val();
-                    if (existingData.gridSize) {
-                        GRID_SIZE = existingData.gridSize;
-                        CELL_PX = Math.floor(420 / GRID_SIZE);
-                    }
                     await update(ref(db, `rooms/${roomId}/players/${playerId}`), {
                         color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: false, ready: false
                     });
                     onDisconnect(ref(db, `rooms/${roomId}/players/${playerId}`)).remove();
                 }
                 
-                document.getElementById('room-display-mode').textContent = `Sala: ${roomId} ${isHost ? '(Anfitrión)' : '(Invitado)'}`;
-                document.getElementById('room-display-vz').textContent = `Sala: ${roomId}`;
+                lobbyScreen.style.display = 'none';
+                gameScreen.style.display = 'block';
                 document.getElementById('room-display').textContent = `Sala: ${roomId} ${isHost ? '(Anfitrión)' : '(Invitado)'}`;
-                document.getElementById('room-display-config').textContent = `Sala: ${roomId} ${isHost ? '(Anfitrión)' : '(Invitado)'}`;
                 document.getElementById('room-display-3d').textContent = `Sala: ${roomId}`;
                 
-                showScreen('mode-screen');
+                colorSelectedInRoom = false;
+                document.querySelectorAll('#game-color-picker .color-btn').forEach(b => b.classList.remove('selected'));
+                const statusEl = document.getElementById('color-selection-status');
+                statusEl.textContent = '⚠️ Selecciona un color para habilitar el botón "Listo"';
+                statusEl.style.color = '#ff6666';
+                document.getElementById('btn-host-ready').disabled = true;
+                document.getElementById('btn-ready').disabled = true;
+
+                const colorPicker = document.getElementById('game-color-picker');
+                if (isHost) {
+                    colorPicker.classList.remove('disabled');
+                    const savedColor = localStorage.getItem('ll_color');
+                    if (savedColor) {
+                        const savedBtn = document.querySelector(`#game-color-picker .color-btn[data-color="${savedColor}"]`);
+                        if (savedBtn) savedBtn.click();
+                    }
+                } else {
+                    colorPicker.classList.add('disabled');
+                    statusEl.textContent = '⏳ Espera a que el anfitrión termine el diseño para elegir color';
+                }
+                
+                if (isHost) {
+                    document.getElementById('host-battle-section').style.display = 'flex';
+                    document.getElementById('host-instruction').style.display = 'block';
+                    
+                    // Si el modo es 'image', ocultar controles de dibujo
+                    if (gameMode === 'image') {
+                        document.getElementById('draw-controls').style.display = 'none';
+                        document.getElementById('status').textContent = '✅ Laberinto cargado desde imagen. Elige tu color y presiona "Listo".';
+                    } else {
+                        document.getElementById('draw-controls').style.display = 'block';
+                        document.getElementById('btn-place-goal').style.display = 'inline-block';
+                        document.getElementById('status').textContent = '✏️ Dibuja el laberinto, elige tu color y coloca la META. Luego presiona "Listo".';
+                    }
+                    
+                    document.getElementById('btn-host-ready').style.display = 'block';
+                    document.getElementById('btn-generate').style.display = 'block';
+                    document.getElementById('btn-generate').disabled = true;
+                    
+                    document.getElementById('btn-host-ready').onclick = () => {
+                        if (!colorSelectedInRoom) { alert("Por favor, selecciona un color primero."); return; }
+                        update(ref(db, `rooms/${roomId}`), { hostDesignReady: true });
+                        update(ref(db, `rooms/${roomId}/players/${playerId}`), { ready: true });
+                    };
+                    document.getElementById('btn-generate').onclick = () => { generateGame(); };
+                } else {
+                    document.getElementById('guest-instruction').style.display = 'block';
+                    document.getElementById('btn-ready').style.display = 'block';
+                    document.getElementById('btn-ready').disabled = true;
+                    document.getElementById('btn-ready').textContent = '⏳ Espera al anfitrión...';
+                    document.getElementById('btn-ready').style.background = '#555';
+                    document.getElementById('settings-panel').style.display = 'none';
+                    document.getElementById('status').textContent = 'Espera a que el anfitrión termine el diseño del laberinto.';
+                    
+                    document.getElementById('btn-ready').onclick = () => {
+                        if (!colorSelectedInRoom) { alert("Por favor, selecciona un color primero."); return; }
+                        update(ref(db, `rooms/${roomId}/players/${playerId}`), { ready: true });
+                    };
+                }
+                
+                initCanvas();
                 listenToRoom();
             } catch (error) {
                 console.error("❌ Error:", error);
-                alert("ERROR: " + error.message);
+                alert("ERROR DE CONEXIÓN: " + error.message);
                 document.getElementById('join-btn').disabled = false;
             }
         };
 
-        // ============================================================
-        // SELECCIÓN DE MODO
-        // ============================================================
-        window.selectMode = (mode) => {
-            gameMode = mode;
-            
-            if (mode === 'draw') {
-                showScreen('game-screen');
-                initCanvas();
-                if (isHost) {
-                    document.getElementById('host-instruction').style.display = 'block';
-                    document.getElementById('guest-instruction').style.display = 'none';
-                } else {
-                    document.getElementById('host-instruction').style.display = 'none';
-                    document.getElementById('guest-instruction').style.display = 'block';
+        function listenToRoom() {
+            onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+                
+                // NUEVO: Actualizar GRID_SIZE dinámicamente
+                if (data.gridSize) {
+                    GRID_SIZE = data.gridSize;
+                    CELL_PX = Math.floor(420 / GRID_SIZE);
                 }
-            } else if (mode === 'image') {
-                showScreen('vectorizer-screen');
-                showVZPage(1);
-            }
-        };
-
-        // ============================================================
-        // VECTORIZADOR INTEGRADO
-        // ============================================================
-        
-        // --- VZ Página 1: Carga de imagen ---
-        const vzFileInput = document.getElementById('vz-file-input');
-        const vzFileName = document.getElementById('vz-file-name');
-        const vzBtnStart = document.getElementById('vz-btn-start');
-        
-        vzFileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            vzFileName.textContent = `📄 ${file.name}`;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const img = new Image();
-                img.onload = () => {
-                    vz_originalImage = img;
-                    vzBtnStart.disabled = false;
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        });
-        
-        vzBtnStart.addEventListener('click', () => {
-            vzResizeImage();
-            showVZPage(2);
-        });
-        
-        function vzResizeImage() {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            let width = vz_originalImage.width;
-            let height = vz_originalImage.height;
-            if (width > VZ_MAX_DIMENSION || height > VZ_MAX_DIMENSION) {
-                const ratio = Math.min(VZ_MAX_DIMENSION / width, VZ_MAX_DIMENSION / height);
-                width = Math.floor(width * ratio);
-                height = Math.floor(height * ratio);
-            }
-            canvas.width = width;
-            canvas.height = height;
-            ctx.drawImage(vz_originalImage, 0, 0, width, height);
-            vz_resizedImage = canvas;
-        }
-        
-        // --- VZ Página 2: Calibración ---
-        const vzMainCanvas = document.getElementById('vz-main-canvas');
-        const vzMainCtx = vzMainCanvas.getContext('2d');
-        const vzBtnCalibrate = document.getElementById('vz-btn-calibrate');
-        const vzPointsStatus = document.getElementById('vz-points-status');
-        
-        const vzBtnPoint1 = document.getElementById('vz-btn-point-1');
-        const vzBtnPoint2 = document.getElementById('vz-btn-point-2');
-        const vzBtnPoint3 = document.getElementById('vz-btn-point-3');
-        const vzBtnPoint4 = document.getElementById('vz-btn-point-4');
-        
-        const vzPoint1Status = document.getElementById('vz-point-1-status');
-        const vzPoint2Status = document.getElementById('vz-point-2-status');
-        const vzPoint3Status = document.getElementById('vz-point-3-status');
-        const vzPoint4Status = document.getElementById('vz-point-4-status');
-        
-        function vzUpdatePointButtonsUI() {
-            const allPlaced = vz_cornerPoints.every(p => p !== null);
-            vzBtnCalibrate.disabled = !allPlaced;
-            
-            vzBtnPoint1.classList.toggle('active-mode', vz_activePointMode === 0);
-            vzBtnPoint2.classList.toggle('active-mode', vz_activePointMode === 1);
-            vzBtnPoint3.classList.toggle('active-mode', vz_activePointMode === 2);
-            vzBtnPoint4.classList.toggle('active-mode', vz_activePointMode === 3);
-            
-            for (let i = 0; i < 4; i++) {
-                const btn = [vzBtnPoint1, vzBtnPoint2, vzBtnPoint3, vzBtnPoint4][i];
-                if (vz_cornerPoints[i]) {
-                    btn.innerHTML = `🔴 Punto ${i+1} - Reubicar<small>Toca para reubicar</small>`;
-                } else {
-                    btn.innerHTML = `🔴 Punto ${i+1} - Colocar<small>Toca este botón y luego la imagen</small>`;
-                }
-            }
-            
-            for (let i = 0; i < 4; i++) {
-                const status = [vzPoint1Status, vzPoint2Status, vzPoint3Status, vzPoint4Status][i];
-                if (vz_cornerPoints[i]) {
-                    status.className = 'vz-point-status-item placed';
-                    status.textContent = `Punto ${i+1}: ✅`;
-                } else {
-                    status.className = 'vz-point-status-item pending';
-                    status.textContent = `Punto ${i+1}: ❌`;
-                }
-            }
-            
-            if (vz_activePointMode !== null) {
-                vzPointsStatus.textContent = `🔴 Modo Punto ${vz_activePointMode+1} activo: toca la imagen`;
-                vzPointsStatus.className = 'vz-status-message vz-status-info';
-            } else if (allPlaced) {
-                vzPointsStatus.textContent = '✅ ¡Todos los puntos colocados!';
-                vzPointsStatus.className = 'vz-status-message vz-status-success';
-            } else {
-                vzPointsStatus.textContent = '👆 Presiona un botón para comenzar';
-                vzPointsStatus.className = 'vz-status-message vz-status-warning';
-            }
-        }
-        
-        vzBtnPoint1.addEventListener('click', () => { vz_activePointMode = (vz_activePointMode === 0) ? null : 0; vzUpdatePointButtonsUI(); });
-        vzBtnPoint2.addEventListener('click', () => { vz_activePointMode = (vz_activePointMode === 1) ? null : 1; vzUpdatePointButtonsUI(); });
-        vzBtnPoint3.addEventListener('click', () => { vz_activePointMode = (vz_activePointMode === 2) ? null : 2; vzUpdatePointButtonsUI(); });
-        vzBtnPoint4.addEventListener('click', () => { vz_activePointMode = (vz_activePointMode === 3) ? null : 3; vzUpdatePointButtonsUI(); });
-        
-        function vzDrawImageWithPoints() {
-            vzMainCanvas.width = vz_resizedImage.width;
-            vzMainCanvas.height = vz_resizedImage.height;
-            vzMainCtx.drawImage(vz_resizedImage, 0, 0);
-            
-            vz_cornerPoints.forEach((point, idx) => {
-                if (point) {
-                    vzMainCtx.fillStyle = '#ff0000';
-                    vzMainCtx.beginPath();
-                    vzMainCtx.arc(point.x, point.y, 12, 0, Math.PI * 2);
-                    vzMainCtx.fill();
-                    vzMainCtx.strokeStyle = 'white';
-                    vzMainCtx.lineWidth = 2;
-                    vzMainCtx.stroke();
-                    vzMainCtx.fillStyle = 'white';
-                    vzMainCtx.font = 'bold 16px Arial';
-                    vzMainCtx.textAlign = 'center';
-                    vzMainCtx.textBaseline = 'middle';
-                    vzMainCtx.fillText(idx + 1, point.x, point.y);
-                }
-            });
-        }
-        
-        function vzHandleCanvasTap(clientX, clientY) {
-            const rect = vzMainCanvas.getBoundingClientRect();
-            const scaleX = vzMainCanvas.width / rect.width;
-            const scaleY = vzMainCanvas.height / rect.height;
-            const x = (clientX - rect.left) * scaleX;
-            const y = (clientY - rect.top) * scaleY;
-            
-            if (vz_activePointMode !== null) {
-                vz_cornerPoints[vz_activePointMode] = { x, y };
-                vz_activePointMode = null;
-                vzUpdatePointButtonsUI();
-                vzDrawImageWithPoints();
-            }
-        }
-        
-        vzMainCanvas.addEventListener('click', (e) => vzHandleCanvasTap(e.clientX, e.clientY));
-        vzMainCanvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            vzHandleCanvasTap(touch.clientX, touch.clientY);
-        });
-        
-        // Selector de tamaño
-        document.querySelectorAll('.vz-size-option').forEach(option => {
-            option.addEventListener('click', () => {
-                document.querySelectorAll('.vz-size-option').forEach(o => o.classList.remove('selected'));
-                option.classList.add('selected');
-                vz_gridSize = parseInt(option.dataset.size);
-            });
-        });
-        
-        vzBtnCalibrate.addEventListener('click', () => {
-            vzProcessImage();
-            showVZPage(3);
-        });
-        
-        function vzProcessImage() {
-            const tempCanvas = document.createElement('canvas');
-            const tempCtx = tempCanvas.getContext('2d');
-            
-            const minX = Math.min(...vz_cornerPoints.map(p => p.x));
-            const maxX = Math.max(...vz_cornerPoints.map(p => p.x));
-            const minY = Math.min(...vz_cornerPoints.map(p => p.y));
-            const maxY = Math.max(...vz_cornerPoints.map(p => p.y));
-            const width = maxX - minX;
-            const height = maxY - minY;
-            
-            tempCtx.drawImage(vz_resizedImage, minX, minY, width, height, 0, 0, width, height);
-            
-            const imageData = tempCtx.getImageData(0, 0, width, height);
-            const data = imageData.data;
-            
-            for (let i = 0; i < data.length; i += 4) {
-                const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-                data[i] = data[i + 1] = data[i + 2] = gray;
-            }
-            
-            const threshold = 85;
-            for (let i = 0; i < data.length; i += 4) {
-                const value = data[i] < threshold ? 0 : 255;
-                data[i] = data[i + 1] = data[i + 2] = value;
-            }
-            tempCtx.putImageData(imageData, 0, 0);
-            
-            vz_grid = Array(vz_gridSize).fill(null).map(() => Array(vz_gridSize).fill(0));
-            const cellWidth = width / vz_gridSize;
-            const cellHeight = height / vz_gridSize;
-            
-            for (let row = 0; row < vz_gridSize; row++) {
-                for (let col = 0; col < vz_gridSize; col++) {
-                    const startX = Math.floor(col * cellWidth);
-                    const startY = Math.floor(row * cellHeight);
-                    const endX = Math.floor((col + 1) * cellWidth);
-                    const endY = Math.floor((row + 1) * cellHeight);
-                    
-                    let blackPixels = 0, totalPixels = 0;
-                    const cellData = tempCtx.getImageData(startX, startY, endX - startX, endY - startY);
-                    for (let i = 0; i < cellData.data.length; i += 4) {
-                        if (cellData.data[i] === 0) blackPixels++;
-                        totalPixels++;
+                
+                grid = ensureGrid2D(data.grid, GRID_SIZE);
+                goal = data.goal;
+                startPosition = data.startPosition; // NUEVO
+                players = data.players || {};
+                battleRoyaleMode = data.battleRoyale === true;
+                const hostDesignReady = data.hostDesignReady === true;
+                
+                if (players[playerId]) {
+                    localPlayer.hasStick = players[playerId].hasStick || false;
+                    if (gameStarted) {
+                        const fbX = players[playerId].x;
+                        const fbZ = players[playerId].z;
+                        const diff = Math.abs(localPlayer.x - fbX) + Math.abs(localPlayer.z - fbZ);
+                        
+                        if (diff > 2.0) {
+                            localPlayer.x = fbX;
+                            localPlayer.z = fbZ;
+                            respawnCooldown = 0.5;
+                            playSound('hit');
+                        } else if (diff > 0.5) {
+                            localPlayer.x = fbX;
+                            localPlayer.z = fbZ;
+                        }
                     }
-                    vz_grid[row][col] = (blackPixels / totalPixels) > 0.08 ? 1 : 0;
                 }
-            }
+                
+                if (!gameStarted) {
+                    const totalPlayers = Object.keys(players).length;
+                    const readyCount = Object.values(players).filter(p => p.ready === true).length;
+                    const maxPlayers = data.maxPlayers || 2;
+                    const statusEl = document.getElementById('players-ready-status');
+                    if (statusEl) {
+                        let modeText = battleRoyaleMode ? ' ⚔️ MODO BATALLA' : '';
+                        statusEl.textContent = `👥 Jugadores listos: ${readyCount}/${totalPlayers}${modeText}`;
+                    }
+                    
+                    if (!isHost && hostDesignReady) {
+                        const colorPicker = document.getElementById('game-color-picker');
+                        if (colorPicker.classList.contains('disabled')) {
+                            colorPicker.classList.remove('disabled');
+                            const statusEl = document.getElementById('color-selection-status');
+                            statusEl.textContent = '🎨 ¡Ahora puedes elegir tu color!';
+                            statusEl.style.color = '#4CAF50';
+                            
+                            const savedColor = localStorage.getItem('ll_color');
+                            if (savedColor && !colorSelectedInRoom) {
+                                const savedBtn = document.querySelector(`#game-color-picker .color-btn[data-color="${savedColor}"]`);
+                                if (savedBtn) savedBtn.click();
+                            }
+                        }
+                    }
+                    
+                    if (isHost) {
+                        const hostReady = players[playerId] && players[playerId].ready === true;
+                        const btnHostReady = document.getElementById('btn-host-ready');
+                        const btnGenerate = document.getElementById('btn-generate');
+                        
+                        if (hostReady) {
+                            btnHostReady.disabled = true;
+                            btnHostReady.textContent = '✅ ¡Diseño terminado!';
+                            btnHostReady.style.background = '#555';
+                            
+                            const guestReadyCount = Object.keys(players).filter(pid => pid !== playerId && players[pid].ready === true).length;
+                            const expectedGuests = maxPlayers - 1;
+                            
+                            if (guestReadyCount >= expectedGuests && totalPlayers === maxPlayers) {
+                                btnGenerate.disabled = false;
+                                document.getElementById('status').textContent = '¡Todos listos! Puedes generar el mapa.';
+                            } else if (totalPlayers < maxPlayers) {
+                                btnGenerate.disabled = true;
+                                document.getElementById('status').textContent = `Esperando jugadores... (${totalPlayers}/${maxPlayers})`;
+                            } else {
+                                btnGenerate.disabled = true;
+                                document.getElementById('status').textContent = `Esperando a los invitados (${guestReadyCount}/${expectedGuests} listos)...`;
+                            }
+                        } else {
+                            btnHostReady.disabled = !colorSelectedInRoom;
+                            btnHostReady.textContent = '✅ Estoy listo para generar';
+                            btnHostReady.style.background = '#28a745';
+                            btnGenerate.disabled = true;
+                        }
+                    }
+                    
+                    if (!isHost) {
+                        const guestReady = players[playerId] && players[playerId].ready === true;
+                        const btnReady = document.getElementById('btn-ready');
+                        
+                        if (guestReady) {
+                            btnReady.disabled = true;
+                            btnReady.textContent = '✅ ¡Listo!';
+                            btnReady.style.background = '#555';
+                            document.getElementById('status').textContent = 'Esperando a que el anfitrión inicie la partida...';
+                        } else if (hostDesignReady) {
+                            if (colorSelectedInRoom) {
+                                btnReady.disabled = false;
+                                btnReady.textContent = '✅ Listo para jugar';
+                                btnReady.style.background = '#28a745';
+                                document.getElementById('status').textContent = '¡El anfitrión terminó! Presiona "Listo".';
+                            } else {
+                                btnReady.disabled = true;
+                                btnReady.textContent = '🎨 Elige color primero';
+                                btnReady.style.background = '#555';
+                                document.getElementById('status').textContent = '¡El anfitrión terminó! Selecciona un color para continuar.';
+                            }
+                        } else {
+                            btnReady.disabled = true;
+                            btnReady.textContent = '⏳ Espera al anfitrión...';
+                            btnReady.style.background = '#555';
+                            document.getElementById('status').textContent = 'Espera a que el anfitrión termine el diseño del laberinto.';
+                        }
+                    }
+                }
+                
+                if (data.gameStarted && !gameStarted) {
+                    start3DGame(data.settings, grid, goal, startPosition, players);
+                }
+                
+                redrawCanvas();
+                if (gameStarted) updateOtherPlayers3D();
+            });
         }
-        
-        // --- VZ Página 3: Revisión ---
-        const vzGridCanvas = document.getElementById('vz-grid-canvas');
-        const vzGridCtx = vzGridCanvas.getContext('2d');
-        
-        function vzDrawGrid() {
-            const canvasSize = 500;
-            vzGridCanvas.width = canvasSize;
-            vzGridCanvas.height = canvasSize;
-            const cellSize = canvasSize / vz_gridSize;
-            
-            for (let row = 0; row < vz_gridSize; row++) {
-                for (let col = 0; col < vz_gridSize; col++) {
-                    vzGridCtx.fillStyle = vz_grid[row][col] === 1 ? '#000000' : '#ffffff';
-                    vzGridCtx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
-                }
-            }
-            
-            vzGridCtx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
-            vzGridCtx.lineWidth = 1;
-            for (let i = 0; i <= vz_gridSize; i++) {
-                vzGridCtx.beginPath();
-                vzGridCtx.moveTo(i * cellSize, 0);
-                vzGridCtx.lineTo(i * cellSize, canvasSize);
-                vzGridCtx.stroke();
-                vzGridCtx.beginPath();
-                vzGridCtx.moveTo(0, i * cellSize);
-                vzGridCtx.lineTo(canvasSize, i * cellSize);
-                vzGridCtx.stroke();
-            }
-        }
-        
-        function vzHandleGridTap(clientX, clientY) {
-            const rect = vzGridCanvas.getBoundingClientRect();
-            const scaleX = vzGridCanvas.width / rect.width;
-            const scaleY = vzGridCanvas.height / rect.height;
-            const x = (clientX - rect.left) * scaleX;
-            const y = (clientY - rect.top) * scaleY;
-            const col = Math.floor(x / (vzGridCanvas.width / vz_gridSize));
-            const row = Math.floor(y / (vzGridCanvas.height / vz_gridSize));
-            if (row >= 0 && row < vz_gridSize && col >= 0 && col < vz_gridSize) {
-                vz_grid[row][col] = vz_grid[row][col] === 1 ? 0 : 1;
-                vzDrawGrid();
-            }
-        }
-        
-        vzGridCanvas.addEventListener('click', (e) => vzHandleGridTap(e.clientX, e.clientY));
-        vzGridCanvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            vzHandleGridTap(touch.clientX, touch.clientY);
-        });
-        
-        // --- VZ Página 4: Inicio y Meta ---
-        const vzMarkersCanvas = document.getElementById('vz-markers-canvas');
-        const vzMarkersCtx = vzMarkersCanvas.getContext('2d');
-        const vzMarkersStatus = document.getElementById('vz-markers-status');
-        const vzBtnFinalize = document.getElementById('vz-btn-finalize');
-        const vzBtnPlaceStart = document.getElementById('vz-btn-place-start');
-        const vzBtnPlaceGoal = document.getElementById('vz-btn-place-goal');
-        const vzStartStatus = document.getElementById('vz-start-status');
-        const vzGoalStatus = document.getElementById('vz-goal-status');
-        
-        function vzUpdateMarkerButtonsUI() {
-            vzBtnPlaceStart.classList.toggle('active-mode', vz_activeMarkerMode === 'start');
-            vzBtnPlaceGoal.classList.toggle('active-mode', vz_activeMarkerMode === 'goal');
-            
-            if (vz_startCell) {
-                vzBtnPlaceStart.innerHTML = `📍 Mover INICIO (${vz_startCell.col}, ${vz_startCell.row})<small>Toca para reubicar</small>`;
-            } else {
-                vzBtnPlaceStart.innerHTML = `📍 Colocar INICIO<small>Toca este botón y luego una celda blanca</small>`;
-            }
-            
-            if (vz_goalCell) {
-                vzBtnPlaceGoal.innerHTML = `🎯 Mover META (${vz_goalCell.col}, ${vz_goalCell.row})<small>Toca para reubicar</small>`;
-            } else {
-                vzBtnPlaceGoal.innerHTML = `🎯 Colocar META<small>Toca este botón y luego una celda blanca</small>`;
-            }
-            
-            if (vz_startCell) {
-                vzStartStatus.className = 'vz-marker-status-item placed';
-                vzStartStatus.textContent = `📍 Inicio: (${vz_startCell.col}, ${vz_startCell.row}) ✅`;
-            } else {
-                vzStartStatus.className = 'vz-marker-status-item pending';
-                vzStartStatus.textContent = '📍 Inicio: Sin colocar';
-            }
-            
-            if (vz_goalCell) {
-                vzGoalStatus.className = 'vz-marker-status-item placed';
-                vzGoalStatus.textContent = `🎯 Meta: (${vz_goalCell.col}, ${vz_goalCell.row}) ✅`;
-            } else {
-                vzGoalStatus.className = 'vz-marker-status-item pending';
-                vzGoalStatus.textContent = '🎯 Meta: Sin colocar';
-            }
-            
-            vzBtnFinalize.disabled = !(vz_startCell && vz_goalCell);
-            
-            if (!vz_activeMarkerMode) {
-                if (vz_startCell && vz_goalCell) {
-                    vzMarkersStatus.textContent = '✅ ¡Listo! Presiona Finalizar';
-                    vzMarkersStatus.className = 'vz-status-message vz-status-success';
-                } else {
-                    vzMarkersStatus.textContent = '👆 Presiona un botón para comenzar';
-                    vzMarkersStatus.className = 'vz-status-message vz-status-warning';
-                }
-            } else if (vz_activeMarkerMode === 'start') {
-                vzMarkersStatus.textContent = '📍 Toca una celda blanca para el INICIO';
-                vzMarkersStatus.className = 'vz-status-message vz-status-info';
-            } else if (vz_activeMarkerMode === 'goal') {
-                vzMarkersStatus.textContent = '🎯 Toca una celda blanca para la META';
-                vzMarkersStatus.className = 'vz-status-message vz-status-info';
-            }
-        }
-        
-        vzBtnPlaceStart.addEventListener('click', () => {
-            vz_activeMarkerMode = (vz_activeMarkerMode === 'start') ? null : 'start';
-            vzUpdateMarkerButtonsUI();
-        });
-        
-        vzBtnPlaceGoal.addEventListener('click', () => {
-            vz_activeMarkerMode = (vz_activeMarkerMode === 'goal') ? null : 'goal';
-            vzUpdateMarkerButtonsUI();
-        });
-        
-        function vzDrawMarkers() {
-            const canvasSize = 500;
-            vzMarkersCanvas.width = canvasSize;
-            vzMarkersCanvas.height = canvasSize;
-            const cellSize = canvasSize / vz_gridSize;
-            
-            for (let row = 0; row < vz_gridSize; row++) {
-                for (let col = 0; col < vz_gridSize; col++) {
-                    vzMarkersCtx.fillStyle = vz_grid[row][col] === 1 ? '#000000' : '#ffffff';
-                    vzMarkersCtx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
-                }
-            }
-            
-            if (vz_startCell) {
-                vzMarkersCtx.fillStyle = '#00ff00';
-                vzMarkersCtx.beginPath();
-                vzMarkersCtx.arc(vz_startCell.col * cellSize + cellSize / 2, vz_startCell.row * cellSize + cellSize / 2, cellSize * 0.35, 0, Math.PI * 2);
-                vzMarkersCtx.fill();
-                vzMarkersCtx.strokeStyle = 'white';
-                vzMarkersCtx.lineWidth = 2;
-                vzMarkersCtx.stroke();
-                vzMarkersCtx.fillStyle = 'black';
-                vzMarkersCtx.font = 'bold ' + Math.floor(cellSize * 0.4) + 'px Arial';
-                vzMarkersCtx.textAlign = 'center';
-                vzMarkersCtx.textBaseline = 'middle';
-                vzMarkersCtx.fillText('S', vz_startCell.col * cellSize + cellSize / 2, vz_startCell.row * cellSize + cellSize / 2);
-            }
-            
-            if (vz_goalCell) {
-                vzMarkersCtx.fillStyle = '#ff0000';
-                vzMarkersCtx.beginPath();
-                vzMarkersCtx.arc(vz_goalCell.col * cellSize + cellSize / 2, vz_goalCell.row * cellSize + cellSize / 2, cellSize * 0.35, 0, Math.PI * 2);
-                vzMarkersCtx.fill();
-                vzMarkersCtx.strokeStyle = 'white';
-                vzMarkersCtx.lineWidth = 2;
-                vzMarkersCtx.stroke();
-                vzMarkersCtx.fillStyle = 'white';
-                vzMarkersCtx.font = 'bold ' + Math.floor(cellSize * 0.4) + 'px Arial';
-                vzMarkersCtx.textAlign = 'center';
-                vzMarkersCtx.textBaseline = 'middle';
-                vzMarkersCtx.fillText('M', vz_goalCell.col * cellSize + cellSize / 2, vz_goalCell.row * cellSize + cellSize / 2);
-            }
-            
-            vzMarkersCtx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
-            vzMarkersCtx.lineWidth = 1;
-            for (let i = 0; i <= vz_gridSize; i++) {
-                vzMarkersCtx.beginPath();
-                vzMarkersCtx.moveTo(i * cellSize, 0);
-                vzMarkersCtx.lineTo(i * cellSize, canvasSize);
-                vzMarkersCtx.stroke();
-                vzMarkersCtx.beginPath();
-                vzMarkersCtx.moveTo(0, i * cellSize);
-                vzMarkersCtx.lineTo(canvasSize, i * cellSize);
-                vzMarkersCtx.stroke();
-            }
-        }
-        
-        function vzHandleMarkerClick(clientX, clientY) {
-            const rect = vzMarkersCanvas.getBoundingClientRect();
-            const scaleX = vzMarkersCanvas.width / rect.width;
-            const scaleY = vzMarkersCanvas.height / rect.height;
-            const x = (clientX - rect.left) * scaleX;
-            const y = (clientY - rect.top) * scaleY;
-            const col = Math.floor(x / (vzMarkersCanvas.width / vz_gridSize));
-            const row = Math.floor(y / (vzMarkersCanvas.height / vz_gridSize));
-            
-            if (row >= 0 && row < vz_gridSize && col >= 0 && col < vz_gridSize) {
-                if (!vz_activeMarkerMode) {
-                    vzMarkersStatus.textContent = '⚠️ Presiona un botón primero';
-                    vzMarkersStatus.className = 'vz-status-message vz-status-warning';
-                    return;
-                }
-                if (vz_grid[row][col] === 1) {
-                    vzMarkersStatus.textContent = '⚠️ No puedes colocar en una pared';
-                    vzMarkersStatus.className = 'vz-status-message vz-status-warning';
-                    return;
-                }
-                if (vz_activeMarkerMode === 'start') {
-                    vz_startCell = { row, col };
-                    vz_activeMarkerMode = null;
-                } else if (vz_activeMarkerMode === 'goal') {
-                    vz_goalCell = { row, col };
-                    vz_activeMarkerMode = null;
-                }
-                vzUpdateMarkerButtonsUI();
-                vzDrawMarkers();
-            }
-        }
-        
-        vzMarkersCanvas.addEventListener('click', (e) => vzHandleMarkerClick(e.clientX, e.clientY));
-        vzMarkersCanvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            vzHandleMarkerClick(touch.clientX, touch.clientY);
-        });
-        
-        // --- PUENTE: Finalizar vectorizador → Configuración ---
-        vzBtnFinalize.addEventListener('click', async () => {
-            // Pasar datos del vectorizador al juego
-            GRID_SIZE = vz_gridSize;
-            CELL_PX = Math.floor(420 / GRID_SIZE);
-            grid = vz_grid.map(row => [...row]); // Copia profunda
-            goal = { x: vz_goalCell.col, y: vz_goalCell.row };
-            startPosition = { x: vz_startCell.col, y: vz_startCell.row };
-            
-            // Actualizar Firebase con los datos del laberinto
-            try {
-                await update(ref(db, `rooms/${roomId}`), {
-                    gridSize: GRID_SIZE,
-                    grid: grid,
-                    goal: goal,
-                    startPosition: startPosition,
-                    hostDesignReady: true
-                });
-                console.log('✅ Laberinto enviado a Firebase');
-            } catch (e) {
-                console.error('❌ Error al enviar:', e);
-            }
-            
-            // Resetear estado del vectorizador para próxima vez
-            vz_originalImage = null;
-            vz_resizedImage = null;
-            vz_cornerPoints = [null, null, null, null];
-            vz_grid = [];
-            vz_startCell = null;
-            vz_goalCell = null;
-            vz_activePointMode = null;
-            vz_activeMarkerMode = null;
-            vzFileInput.value = '';
-            vzFileName.textContent = '';
-            vzBtnStart.disabled = true;
-            
-            // Ir a configuración
-            goToConfig();
-        });
 
-        // ============================================================
-        // EDITOR DE DIBUJO (modo draw)
-        // ============================================================
+        function syncPlayerPosition() {
+            if (!gameStarted || gameWon) return;
+            if (respawnCooldown > 0) return;
+            const now = Date.now();
+            if (now - lastDbUpdate > 100) {
+                update(ref(db, `rooms/${roomId}/players/${playerId}`), { x: localPlayer.x, z: localPlayer.z });
+                lastDbUpdate = now;
+            }
+        }
+
         let isDrawing = false, currentColor = 'black', placingMode = null;
         const canvas = document.getElementById('draw-canvas');
         const ctx = canvas.getContext('2d');
 
         function initCanvas() {
-            canvas.width = 420;
-            canvas.height = 420;
-            CELL_PX = Math.floor(420 / GRID_SIZE);
+            // Ajustar tamaño del canvas según GRID_SIZE
+            const canvasSize = 420;
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+            CELL_PX = Math.floor(canvasSize / GRID_SIZE);
+            
             ctx.fillStyle = 'white';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             redrawCanvas();
@@ -1442,19 +942,19 @@
         }
 
         function draw(e) {
-            if (!isDrawing || gameStarted || !isHost) return;
+            if (!isDrawing || gameStarted) return;
             e.preventDefault();
             const pos = getPos(e);
             const gx = Math.floor(pos.x / CELL_PX), gy = Math.floor(pos.y / CELL_PX);
             
             if (gx >= 0 && gx < GRID_SIZE && gy >= 0 && gy < GRID_SIZE) {
-                if (placingMode === 'goal') {
+                if (placingMode === 'goal' && isHost) {
                     goal = { x: gx, y: gy };
                     placingMode = null;
                     update(ref(db, `rooms/${roomId}`), { goal: goal });
                     document.getElementById('status').textContent = '✅ Meta colocada';
                     redrawCanvas();
-                } else {
+                } else if (isHost) {
                     grid[gy][gx] = currentColor === 'black' ? 1 : 0;
                     update(ref(db, `rooms/${roomId}`), { grid: grid });
                     redrawCanvas();
@@ -1479,171 +979,24 @@
                 }
                 ctx.closePath(); ctx.fill();
             }
+            Object.values(players).forEach((p, idx) => {
+                if (p.startX !== undefined && p.startZ !== undefined) {
+                    ctx.fillStyle = p.color || '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(p.startX * CELL_PX + CELL_PX/2, p.startZ * CELL_PX + CELL_PX/2, CELL_PX * 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = 'black'; ctx.font = 'bold 10px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(`J${idx + 1}`, p.startX * CELL_PX + CELL_PX/2, p.startZ * CELL_PX + CELL_PX/2);
+                }
+            });
         }
 
-        document.getElementById('btn-fill-white').onclick = () => { 
-            if(!isHost) return; 
-            grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0)); 
-            update(ref(db, `rooms/${roomId}`), { grid }); 
-            redrawCanvas(); 
-        };
-        document.getElementById('btn-fill-black').onclick = () => { 
-            if(!isHost) return; 
-            grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(1)); 
-            update(ref(db, `rooms/${roomId}`), { grid }); 
-            redrawCanvas(); 
-        };
+        document.getElementById('btn-fill-white').onclick = () => { if(!isHost || gameMode === 'image') return; grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0)); update(ref(db, `rooms/${roomId}`), { grid }); redrawCanvas(); };
+        document.getElementById('btn-fill-black').onclick = () => { if(!isHost || gameMode === 'image') return; grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(1)); update(ref(db, `rooms/${roomId}`), { grid }); redrawCanvas(); };
         document.getElementById('btn-draw-white').onclick = () => { currentColor = 'white'; };
         document.getElementById('btn-draw-black').onclick = () => { currentColor = 'black'; };
-        document.getElementById('btn-place-goal').onclick = () => { 
-            if(isHost) { 
-                placingMode = 'goal'; 
-                document.getElementById('status').textContent = '🎯 Toca el canvas para colocar la META'; 
-            }
-        };
-
-        // ============================================================
-        // LISTENER DE FIREBASE
-        // ============================================================
-        function listenToRoom() {
-            onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
-                const data = snapshot.val();
-                if (!data) return;
-                
-                if (data.gridSize) {
-                    GRID_SIZE = data.gridSize;
-                    CELL_PX = Math.floor(420 / GRID_SIZE);
-                }
-                
-                grid = ensureGrid2D(data.grid, GRID_SIZE);
-                goal = data.goal;
-                startPosition = data.startPosition;
-                players = data.players || {};
-                battleRoyaleMode = data.battleRoyale === true;
-                const hostDesignReady = data.hostDesignReady === true;
-                
-                if (players[playerId]) {
-                    localPlayer.hasStick = players[playerId].hasStick || false;
-                    if (gameStarted) {
-                        const fbX = players[playerId].x;
-                        const fbZ = players[playerId].z;
-                        const diff = Math.abs(localPlayer.x - fbX) + Math.abs(localPlayer.z - fbZ);
-                        if (diff > 2.0) {
-                            localPlayer.x = fbX;
-                            localPlayer.z = fbZ;
-                            respawnCooldown = 0.5;
-                            playSound('hit');
-                        } else if (diff > 0.5) {
-                            localPlayer.x = fbX;
-                            localPlayer.z = fbZ;
-                        }
-                    }
-                }
-                
-                if (!gameStarted) {
-                    const totalPlayers = Object.keys(players).length;
-                    const readyCount = Object.values(players).filter(p => p.ready === true).length;
-                    const maxPlayers = data.maxPlayers || 2;
-                    const statusEl = document.getElementById('players-ready-status');
-                    if (statusEl) {
-                        let modeText = battleRoyaleMode ? ' ⚔️ MODO BATALLA' : '';
-                        statusEl.textContent = `👥 Jugadores listos: ${readyCount}/${totalPlayers}${modeText}`;
-                    }
-                    
-                    if (isHost) {
-                        const hostReady = players[playerId] && players[playerId].ready === true;
-                        const btnHostReady = document.getElementById('btn-host-ready');
-                        const btnGenerate = document.getElementById('btn-generate');
-                        
-                        if (hostReady) {
-                            btnHostReady.disabled = true;
-                            btnHostReady.textContent = '✅ ¡Listo!';
-                            btnHostReady.style.background = '#555';
-                            
-                            const guestReadyCount = Object.keys(players).filter(pid => pid !== playerId && players[pid].ready === true).length;
-                            const expectedGuests = maxPlayers - 1;
-                            
-                            if (guestReadyCount >= expectedGuests && totalPlayers === maxPlayers) {
-                                btnGenerate.disabled = false;
-                            } else if (totalPlayers < maxPlayers) {
-                                btnGenerate.disabled = true;
-                            } else {
-                                btnGenerate.disabled = true;
-                            }
-                        } else {
-                            btnHostReady.disabled = !colorSelectedInRoom;
-                            btnHostReady.textContent = '✅ Estoy listo';
-                            btnHostReady.style.background = '#28a745';
-                            btnGenerate.disabled = true;
-                        }
-                    }
-                    
-                    if (!isHost) {
-                        const guestReady = players[playerId] && players[playerId].ready === true;
-                        const btnGuestReady = document.getElementById('btn-guest-ready');
-                        
-                        if (guestReady) {
-                            btnGuestReady.disabled = true;
-                            btnGuestReady.textContent = '✅ ¡Listo!';
-                            btnGuestReady.style.background = '#555';
-                        } else {
-                            btnGuestReady.disabled = !colorSelectedInRoom;
-                            btnGuestReady.textContent = '✅ Listo para jugar';
-                            btnGuestReady.style.background = '#28a745';
-                        }
-                    }
-                }
-                
-                if (data.gameStarted && !gameStarted) {
-                    start3DGame(data.settings, grid, goal, players);
-                }
-                
-                if (document.getElementById('game-screen').classList.contains('active')) {
-                    redrawCanvas();
-                }
-                if (gameStarted) updateOtherPlayers3D();
-            });
-        }
-
-        // ============================================================
-        // COLOR PICKER
-        // ============================================================
-        document.querySelectorAll('#game-color-picker .color-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const colorPicker = document.getElementById('game-color-picker');
-                if (colorPicker.classList.contains('disabled')) return;
-                
-                document.querySelectorAll('#game-color-picker .color-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-                myColor = btn.dataset.color;
-                localStorage.setItem('ll_color', myColor);
-                colorSelectedInRoom = true;
-                
-                const statusEl = document.getElementById('color-selection-status');
-                statusEl.textContent = `✅ Color seleccionado.`;
-                statusEl.style.color = '#4CAF50';
-
-                if (roomId && playerId) {
-                    update(ref(db, `rooms/${roomId}/players/${playerId}`), { color: myColor });
-                }
-            });
-        });
-
-        // ============================================================
-        // BOTONES DE CONFIGURACIÓN
-        // ============================================================
-        document.getElementById('btn-host-ready').onclick = () => {
-            if (!colorSelectedInRoom) { alert("Selecciona un color primero."); return; }
-            update(ref(db, `rooms/${roomId}/players/${playerId}`), { ready: true });
-        };
+        document.getElementById('btn-place-goal').onclick = () => { if(isHost) { placingMode = 'goal'; document.getElementById('status').textContent = '🎯 Toca el canvas para colocar la META'; }};
         
-        document.getElementById('btn-guest-ready').onclick = () => {
-            if (!colorSelectedInRoom) { alert("Selecciona un color primero."); return; }
-            update(ref(db, `rooms/${roomId}/players/${playerId}`), { ready: true });
-        };
-        
-        document.getElementById('btn-generate').onclick = () => { generateGame(); };
-
         ['thickness','height','ambient','player-light','light-distance'].forEach(id => {
             const slider = document.getElementById(id + '-slider'), val = document.getElementById(id + '-val');
             if (slider && val) {
@@ -1656,12 +1009,12 @@
             }
         });
 
-        // ============================================================
-        // GENERAR JUEGO
-        // ============================================================
         function findFarthestStartPositions(currentGrid, numPlayers, goalPos, startPos, size) {
+            // Si hay startPosition del JSON, usarlo para el primer jugador
             if (startPos && numPlayers >= 1) {
                 const positions = [{ x: startPos.x, y: startPos.y }];
+                
+                // Si hay más jugadores, buscar posiciones lejanas para ellos
                 if (numPlayers > 1) {
                     const freeCells = [];
                     for (let y = 1; y < size - 1; y++) {
@@ -1673,6 +1026,7 @@
                         }
                     }
                     freeCells.sort((a, b) => b.dist - a.dist);
+                    
                     for (const cell of freeCells) {
                         if (positions.length >= numPlayers) break;
                         let valid = true;
@@ -1683,9 +1037,11 @@
                         if (valid) positions.push({ x: cell.x, y: cell.y });
                     }
                 }
+                
                 return positions;
             }
             
+            // Si no hay startPosition, usar la lógica original
             const freeCells = [];
             for (let y = 1; y < size - 1; y++) {
                 for (let x = 1; x < size - 1; x++) {
@@ -1698,38 +1054,46 @@
             if (freeCells.length < numPlayers) return [];
             freeCells.sort((a, b) => b.dist - a.dist);
             const positions = [];
+            const minDistance = 3;
             for (const cell of freeCells) {
                 if (positions.length >= numPlayers) break;
                 let valid = true;
                 for (const pos of positions) {
                     const dist = Math.sqrt((cell.x - pos.x) ** 2 + (cell.y - pos.y) ** 2);
-                    if (dist < 3) { valid = false; break; }
+                    if (dist < minDistance) { valid = false; break; }
                 }
                 if (valid) positions.push({ x: cell.x, y: cell.y });
             }
-            if (positions.length < numPlayers) return freeCells.slice(0, numPlayers).map(c => ({ x: c.x, y: c.y }));
+            if (positions.length < numPlayers) {
+                return freeCells.slice(0, numPlayers).map(c => ({ x: c.x, y: c.y }));
+            }
             return positions;
         }
 
         async function generateGame() {
-            if (!goal) { alert("Debe haber una meta"); return; }
+            if (!goal) { alert("El anfitrión debe colocar la meta"); return; }
             
             const battleMode = document.getElementById('battle-mode-game').checked;
+            
             const roomSnapshot = await get(ref(db, `rooms/${roomId}`));
             const roomData = roomSnapshot.val();
             const currentGrid = ensureGrid2D(roomData.grid, GRID_SIZE);
             const maxPlayers = roomData.maxPlayers || 2;
             
+            // Asegurar bordes
             for (let i = 0; i < GRID_SIZE; i++) { 
                 currentGrid[0][i] = 1; currentGrid[GRID_SIZE-1][i] = 1; 
                 currentGrid[i][0] = 1; currentGrid[i][GRID_SIZE-1] = 1; 
             }
             
+            // Reparar espacios cerrados
             const repairResult = fixClosedSpaces(currentGrid, goal, GRID_SIZE);
             if (repairResult.fixed) {
-                alert(`🔧 Se rompieron ${repairResult.wallsBroken} paredes para conectar espacios.`);
+                console.log(`🔧 Se rompieron ${repairResult.wallsBroken} paredes para conectar espacios cerrados`);
+                alert(`⚠️ Se detectaron espacios cerrados en tu laberinto.\n\n🔧 Se rompieron automáticamente ${repairResult.wallsBroken} pared(es) para garantizar que todos los jugadores puedan recorrer el mapa.`);
             }
             
+            // Asegurar área alrededor de la meta
             for (let dy = -1; dy <= 1; dy++) {
                 for (let dx = -1; dx <= 1; dx++) {
                     const cx = goal.x + dx, cz = goal.y + dy;
@@ -1739,7 +1103,7 @@
             
             const startPositions = findFarthestStartPositions(currentGrid, maxPlayers, goal, startPosition, GRID_SIZE);
             if (startPositions.length < maxPlayers) {
-                alert(`No se pudieron encontrar ${maxPlayers} posiciones válidas.`);
+                alert(`No se pudieron encontrar ${maxPlayers} posiciones válidas. Dibuja más caminos.`);
                 return;
             }
             
@@ -1756,6 +1120,17 @@
             };
             
             const playerIds = Object.keys(roomData.players);
+            if (playerIds.length < maxPlayers) {
+                alert(`⚠️ Faltan jugadores.\n\nConectados: ${playerIds.length}/${maxPlayers}`);
+                return;
+            }
+            
+            const readyPlayers = playerIds.filter(pid => roomData.players[pid].ready === true);
+            if (readyPlayers.length < maxPlayers) {
+                alert(`⚠️ No todos están listos.\n\nListos: ${readyPlayers.length}/${maxPlayers}`);
+                return;
+            }
+            
             const updates = { 
                 grid: currentGrid, goal: goal, settings: settings, 
                 gameStarted: true, battleRoyale: battleMode
@@ -1772,16 +1147,13 @@
             update(ref(db, `rooms/${roomId}`), updates);
         }
 
-        // ============================================================
-        // JUEGO 3D
-        // ============================================================
         let scene, camera, renderer, playerAvatars = {};
         let joystick = null;
         let gameCanvas;
 
-        function start3DGame(settings, safeGrid, safeGoal, safePlayers) {
+        function start3DGame(settings, safeGrid, safeGoal, safeStartPosition, safePlayers) {
             gameStarted = true;
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            gameScreen.style.display = 'none';
             document.getElementById('game-container').style.display = 'block';
             const p = safePlayers[playerId];
             if (!p) { alert("Error: Jugador no encontrado."); return; }
@@ -1815,6 +1187,7 @@
             window._playerLight = playerLight;
             
             const wallTexture = generateWallTexture(settings.material);
+            
             const matConfigs = {
                 stone: { color: 0xffffff, roughness: 0.9 }, 
                 brick: { color: 0xffffff, roughness: 0.8 },
@@ -1848,7 +1221,10 @@
             const floorTexture = generateFloorTexture(settings.floor || 'dirt');
             const floor = new THREE.Mesh(
                 new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE),
-                new THREE.MeshStandardMaterial({ map: floorTexture, roughness: 0.9 })
+                new THREE.MeshStandardMaterial({ 
+                    map: floorTexture,
+                    roughness: 0.9
+                })
             );
             floor.rotation.x = -Math.PI / 2; 
             floor.position.set((GRID_SIZE - 1) / 2, 0, (GRID_SIZE - 1) / 2);
@@ -2022,16 +1398,6 @@
                     mctx.stroke();
                 }
             });
-        }
-
-        function syncPlayerPosition() {
-            if (!gameStarted || gameWon) return;
-            if (respawnCooldown > 0) return;
-            const now = Date.now();
-            if (now - lastDbUpdate > 100) {
-                update(ref(db, `rooms/${roomId}/players/${playerId}`), { x: localPlayer.x, z: localPlayer.z });
-                lastDbUpdate = now;
-            }
         }
 
         let startTime = performance.now();
