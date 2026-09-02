@@ -587,12 +587,24 @@
                     isHost = true;
                     await set(roomRef, { host: playerId, maxPlayers: maxPlayers, battleRoyale: false, hostDesignReady: false, gridSize: GRID_SIZE, grid: grid, goal: null, startPosition: null, settings: { thickness: 1.0, height: 2.0, material: 'stone', floor: 'dirt', ambient: 1.0, playerLight: 5.0, lightDist: 50 }, gameStarted: false, players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: true, ready: false } } });
                 } else {
-                    isHost = false;
+                    // 🌟 CORRECCIÓN: Verificar si el jugador que vuelve es el mismo que creó la sala
                     const existingData = snapshot.val();
-                    if (existingData.gridSize) { GRID_SIZE = existingData.gridSize; CELL_PX = Math.floor(420 / GRID_SIZE); }
-                    await update(ref(db, `rooms/${roomId}/players/${playerId}`), { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: false, ready: false });
+                    isHost = (existingData.host === playerId); 
+
+                    if (existingData.gridSize) { 
+                        GRID_SIZE = existingData.gridSize; 
+                        CELL_PX = Math.floor(420 / GRID_SIZE); 
+                    }
+                    
+                    await update(ref(db, `rooms/${roomId}/players/${playerId}`), { 
+                        color: myColor, 
+                        x: 0, z: 0, startX: 0, startZ: 0, 
+                        hasStick: isHost ? true : false, // Si es el host, mantiene el palo
+                        ready: false 
+                    });
                     onDisconnect(ref(db, `rooms/${roomId}/players/${playerId}`)).remove();
                 }
+
                 
                 document.getElementById('room-display-mode').textContent = `Sala: ${roomId} ${isHost ? '(Anfitrión)' : '(Invitado)'}`;
                 document.getElementById('room-display-waiting').textContent = `Sala: ${roomId}`;
