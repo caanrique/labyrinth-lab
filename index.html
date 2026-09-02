@@ -325,6 +325,20 @@
         let colorSelectedInRoom = false;
         let respawnCooldown = 0;
         let waitingForVectorizedMaze = false;
+        let isReturningFromVectorizer = false;
+
+        // Verificar si venimos de regreso desde el generador
+        const urlParamsGame = new URLSearchParams(window.location.search);
+        if (urlParamsGame.get('returning') === 'true' && urlParamsGame.get('room')) {
+            isReturningFromVectorizer = true;
+            // Rellenar el código de sala automáticamente
+            document.getElementById('room-input').value = urlParamsGame.get('room');
+            // Unirse a la sala automáticamente después de medio segundo
+            setTimeout(() => {
+                window.joinRoom();
+            }, 500);
+        }
+
         let previousMazeData = null;
         
         const VECTORIZER_URL = 'https://caanrique.github.io/Labyrinth-converter/';
@@ -729,6 +743,35 @@
             onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
+
+        function listenToRoom() {
+            onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return;
+
+                // 🌟 NUEVO: Si regresamos del vectorizador y el laberinto ya está listo en Firebase
+                if (isReturningFromVectorizer && isHost && data.hostDesignReady && data.grid && data.goal) {
+                    isReturningFromVectorizer = false; // Desactivar la bandera
+                    
+                    // Limpiar la URL para que no se quede el "?returning=true"
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                    // Actualizar variables locales con lo que vino de Firebase
+                    GRID_SIZE = data.gridSize || 21;
+                    CELL_PX = Math.floor(420 / GRID_SIZE);
+                    grid = ensureGrid2D(data.grid, GRID_SIZE);
+                    goal = data.goal;
+                    startPosition = data.startPosition;
+
+                    // ¡Saltar directamente a la pantalla de configuración!
+                    setTimeout(() => {
+                        goToSettings();
+                    }, 500);
+                    return; // Salir de la función para no mostrar el lobby
+                }
+
+                // ... (aquí continúa el resto de tu código original de listenToRoom) ...
+
                 
                 if (data.gridSize) { GRID_SIZE = data.gridSize; CELL_PX = Math.floor(420 / GRID_SIZE); }
                 grid = ensureGrid2D(data.grid, GRID_SIZE);
