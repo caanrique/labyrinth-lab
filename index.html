@@ -739,108 +739,97 @@
         document.getElementById('btn-draw-black').onclick = () => { currentColor = 'black'; };
         document.getElementById('btn-place-goal').onclick = () => { if(isHost) { placingMode = 'goal'; document.getElementById('status').textContent = '🎯 Toca el canvas para colocar la META'; } };
 
-        function listenToRoom() {
-            onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
-                const data = snapshot.val();
-                if (!data) return;
+function listenToRoom() {
+    onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
 
-        function listenToRoom() {
-            onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
-                const data = snapshot.val();
-                if (!data) return;
+        // 🌟 NUEVO: Si regresamos del vectorizador y el laberinto ya está listo
+        if (isReturningFromVectorizer && isHost && data.hostDesignReady && data.grid && data.goal) {
+            isReturningFromVectorizer = false;
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            GRID_SIZE = data.gridSize || 21;
+            CELL_PX = Math.floor(420 / GRID_SIZE);
+            grid = ensureGrid2D(data.grid, GRID_SIZE);
+            goal = data.goal;
+            startPosition = data.startPosition;
 
-                // 🌟 NUEVO: Si regresamos del vectorizador y el laberinto ya está listo en Firebase
-                if (isReturningFromVectorizer && isHost && data.hostDesignReady && data.grid && data.goal) {
-                    isReturningFromVectorizer = false; // Desactivar la bandera
-                    
-                    // Limpiar la URL para que no se quede el "?returning=true"
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    
-                    // Actualizar variables locales con lo que vino de Firebase
-                    GRID_SIZE = data.gridSize || 21;
-                    CELL_PX = Math.floor(420 / GRID_SIZE);
-                    grid = ensureGrid2D(data.grid, GRID_SIZE);
-                    goal = data.goal;
-                    startPosition = data.startPosition;
+            setTimeout(() => {
+                goToSettings();
+            }, 500);
+            return;
+        }
 
-                    // ¡Saltar directamente a la pantalla de configuración!
-                    setTimeout(() => {
-                        goToSettings();
-                    }, 500);
-                    return; // Salir de la función para no mostrar el lobby
-                }
-
-                // ... (aquí continúa el resto de tu código original de listenToRoom) ...
-
-                
-                if (data.gridSize) { GRID_SIZE = data.gridSize; CELL_PX = Math.floor(420 / GRID_SIZE); }
+        if (data.gridSize) { GRID_SIZE = data.gridSize; CELL_PX = Math.floor(420 / GRID_SIZE); }
+        grid = ensureGrid2D(data.grid, GRID_SIZE);
+        goal = data.goal;
+        startPosition = data.startPosition;
+        players = data.players || {};
+        battleRoyaleMode = data.battleRoyale === true;
+        const hostDesignReady = data.hostDesignReady === true;
+        
+        if (waitingForVectorizedMaze && isHost && data.grid && data.goal && data.startPosition) {
+            const currentMazeSignature = JSON.stringify({ gridSize: data.gridSize, grid: data.grid, goal: data.goal, start: data.startPosition });
+            if (previousMazeData !== currentMazeSignature) {
+                previousMazeData = currentMazeSignature;
+                GRID_SIZE = data.gridSize;
+                CELL_PX = Math.floor(420 / GRID_SIZE);
                 grid = ensureGrid2D(data.grid, GRID_SIZE);
                 goal = data.goal;
                 startPosition = data.startPosition;
-                players = data.players || {};
-                battleRoyaleMode = data.battleRoyale === true;
-                const hostDesignReady = data.hostDesignReady === true;
-                
-                if (waitingForVectorizedMaze && isHost && data.grid && data.goal && data.startPosition) {
-                    const currentMazeSignature = JSON.stringify({ gridSize: data.gridSize, grid: data.grid, goal: data.goal, start: data.startPosition });
-                    if (previousMazeData !== currentMazeSignature) {
-                        previousMazeData = currentMazeSignature;
-                        GRID_SIZE = data.gridSize;
-                        CELL_PX = Math.floor(420 / GRID_SIZE);
-                        grid = ensureGrid2D(data.grid, GRID_SIZE);
-                        goal = data.goal;
-                        startPosition = data.startPosition;
-                        document.getElementById('waiting-message').style.display = 'none';
-                        document.getElementById('waiting-spinner').style.display = 'none';
-                        document.getElementById('waiting-success').style.display = 'block';
-                        setTimeout(() => { waitingForVectorizedMaze = false; goToSettings(); }, 1500);
-                    }
-                }
-                
-                if (players[playerId]) {
-                    localPlayer.hasStick = players[playerId].hasStick || false;
-                    if (gameStarted) {
-                        const fbX = players[playerId].x, fbZ = players[playerId].z;
-                        const diff = Math.abs(localPlayer.x - fbX) + Math.abs(localPlayer.z - fbZ);
-                        if (diff > 2.0) { localPlayer.x = fbX; localPlayer.z = fbZ; respawnCooldown = 0.5; playSound('hit'); } 
-                        else if (diff > 0.5) { localPlayer.x = fbX; localPlayer.z = fbZ; }
-                    }
-                }
-                
-                if (!gameStarted) {
-                    const totalPlayers = Object.keys(players).length;
-                    const readyCount = Object.values(players).filter(p => p.ready === true).length;
-                    const maxPlayers = data.maxPlayers || 2;
-                    const statusEl = document.getElementById('players-ready-status');
-                    if (statusEl) {
-                        let modeText = battleRoyaleMode ? ' ⚔️ MODO BATALLA' : '';
-                        statusEl.textContent = `👥 Jugadores listos: ${readyCount}/${totalPlayers}${modeText}`;
-                    }
-                    if (isHost) {
-                        const hostReady = players[playerId] && players[playerId].ready === true;
-                        const btnHostReady = document.getElementById('btn-host-ready');
-                        const btnGenerate = document.getElementById('btn-generate');
-                        if (hostReady) {
-                            btnHostReady.disabled = true; btnHostReady.textContent = '✅ ¡Listo!'; btnHostReady.style.background = '#555';
-                            const guestReadyCount = Object.keys(players).filter(pid => pid !== playerId && players[pid].ready === true).length;
-                            const expectedGuests = maxPlayers - 1;
-                            btnGenerate.disabled = (guestReadyCount >= expectedGuests && totalPlayers === maxPlayers) ? false : true;
-                        } else {
-                            btnHostReady.disabled = !colorSelectedInRoom; btnHostReady.textContent = '✅ Estoy listo'; btnHostReady.style.background = '#28a745'; btnGenerate.disabled = true;
-                        }
-                    }
-                    if (!isHost) {
-                        const guestReady = players[playerId] && players[playerId].ready === true;
-                        const btnGuestReady = document.getElementById('btn-guest-ready');
-                        if (guestReady) { btnGuestReady.disabled = true; btnGuestReady.textContent = '✅ ¡Listo!'; btnGuestReady.style.background = '#555'; } 
-                        else { btnGuestReady.disabled = !colorSelectedInRoom; btnGuestReady.textContent = '✅ Listo para jugar'; btnGuestReady.style.background = '#28a745'; }
-                    }
-                }
-                if (data.gameStarted && !gameStarted) { start3DGame(data.settings, grid, goal, players); }
-                if (document.getElementById('game-screen').classList.contains('active')) { redrawCanvas(); }
-                if (gameStarted) updateOtherPlayers3D();
-            });
+                document.getElementById('waiting-message').style.display = 'none';
+                document.getElementById('waiting-spinner').style.display = 'none';
+                document.getElementById('waiting-success').style.display = 'block';
+                setTimeout(() => { waitingForVectorizedMaze = false; goToSettings(); }, 1500);
+            }
         }
+        
+        if (players[playerId]) {
+            localPlayer.hasStick = players[playerId].hasStick || false;
+            if (gameStarted) {
+                const fbX = players[playerId].x, fbZ = players[playerId].z;
+                const diff = Math.abs(localPlayer.x - fbX) + Math.abs(localPlayer.z - fbZ);
+                if (diff > 2.0) { localPlayer.x = fbX; localPlayer.z = fbZ; respawnCooldown = 0.5; playSound('hit'); } 
+                else if (diff > 0.5) { localPlayer.x = fbX; localPlayer.z = fbZ; }
+            }
+        }
+        
+        if (!gameStarted) {
+            const totalPlayers = Object.keys(players).length;
+            const readyCount = Object.values(players).filter(p => p.ready === true).length;
+            const maxPlayers = data.maxPlayers || 2;
+            const statusEl = document.getElementById('players-ready-status');
+            if (statusEl) {
+                let modeText = battleRoyaleMode ? ' ⚔️ MODO BATALLA' : '';
+                statusEl.textContent = `👥 Jugadores listos: ${readyCount}/${totalPlayers}${modeText}`;
+            }
+            if (isHost) {
+                const hostReady = players[playerId] && players[playerId].ready === true;
+                const btnHostReady = document.getElementById('btn-host-ready');
+                const btnGenerate = document.getElementById('btn-generate');
+                if (hostReady) {
+                    btnHostReady.disabled = true; btnHostReady.textContent = '✅ ¡Listo!'; btnHostReady.style.background = '#555';
+                    const guestReadyCount = Object.keys(players).filter(pid => pid !== playerId && players[pid].ready === true).length;
+                    const expectedGuests = maxPlayers - 1;
+                    btnGenerate.disabled = (guestReadyCount >= expectedGuests && totalPlayers === maxPlayers) ? false : true;
+                } else {
+                    btnHostReady.disabled = !colorSelectedInRoom; btnHostReady.textContent = '✅ Estoy listo'; btnHostReady.style.background = '#28a745'; btnGenerate.disabled = true;
+                }
+            }
+            if (!isHost) {
+                const guestReady = players[playerId] && players[playerId].ready === true;
+                const btnGuestReady = document.getElementById('btn-guest-ready');
+                if (guestReady) { btnGuestReady.disabled = true; btnGuestReady.textContent = '✅ ¡Listo!'; btnGuestReady.style.background = '#555'; } 
+                else { btnGuestReady.disabled = !colorSelectedInRoom; btnGuestReady.textContent = '✅ Listo para jugar'; btnGuestReady.style.background = '#28a745'; }
+            }
+        }
+        if (data.gameStarted && !gameStarted) { start3DGame(data.settings, grid, goal, players); }
+        if (document.getElementById('game-screen').classList.contains('active')) { redrawCanvas(); }
+        if (gameStarted) updateOtherPlayers3D();
+    });
+}
+
 
         document.querySelectorAll('#game-color-picker .color-btn').forEach(btn => {
             btn.addEventListener('click', () => {
