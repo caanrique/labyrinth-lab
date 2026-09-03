@@ -1013,14 +1013,6 @@ window.enterWaitingRoom = async () => {
                 lastDbUpdate = now2;
             }
 
-            onValue(ref(db, `rooms/${roomId}/players`), (snapshot) => {
-                players = snapshot.val() || {};
-                Object.entries(players).forEach(([pid, p]) => {
-                    if (playerAvatars[pid]) {
-                        playerAvatars[pid].position.set(p.x !== undefined ? p.x : p.startX, 0, p.z !== undefined ? p.z : p.startZ);
-                    }
-                });
-            });
             
             drawMinimap(mazeData.grid, mazeData.gridSize);
             
