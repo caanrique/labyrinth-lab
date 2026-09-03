@@ -3,145 +3,232 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Labyrinth Lab 🎮</title>
+    <title>Labyrinth Lab Multijugador 🎮</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; min-height: 100vh; padding: 10px; }
         .container { max-width: 600px; margin: 0 auto; }
         h1 { text-align: center; margin: 20px 0; font-size: 28px; color: #4CAF50; }
         h2 { text-align: center; margin: 15px 0; font-size: 20px; color: #4CAF50; }
-        .screen { display: none; }
+        .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; font-size: 16px; }
+        
+        .screen { display: none; animation: fadeIn 0.4s ease; }
         .screen.active { display: block; }
-        .card { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; margin: 15px 0; text-align: center; }
-        .btn { padding: 15px 25px; font-size: 18px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; margin: 10px 5px; width: 100%; max-width: 300px; }
-        .btn:hover { background: #45a049; }
-        .btn:disabled { background: #555; cursor: not-allowed; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .card { background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px; margin: 15px 0; text-align: center; border: 1px solid rgba(255,255,255,0.1); }
+        
+        .btn { padding: 15px 25px; font-size: 18px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer; margin: 10px 5px; transition: all 0.3s; font-weight: bold; width: 100%; max-width: 350px; }
+        .btn:hover { background: #45a049; transform: scale(1.02); }
+        .btn:disabled { background: #555; cursor: not-allowed; transform: none; }
         .btn-secondary { background: #0066ff; }
-        .btn-outline { background: transparent; border: 2px solid #4CAF50; color: #4CAF50; }
-        .lobby-input { width: 100%; padding: 15px; font-size: 20px; text-align: center; border: 2px solid #4CAF50; border-radius: 8px; background: #222; color: white; text-transform: uppercase; letter-spacing: 2px; }
-        .code-display { background: #111; padding: 20px; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 4px; color: #4CAF50; margin: 15px 0; border: 2px dashed #4CAF50; }
+        .btn-secondary:hover { background: #0052cc; }
+        .btn-back { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); width: auto; padding: 10px 20px; font-size: 16px; }
+        .btn-back:hover { background: rgba(255,255,255,0.2); }
+        
+        .mode-selector { display: flex; flex-direction: column; gap: 15px; margin: 20px 0; }
+        .mode-btn { padding: 20px; font-size: 18px; background: rgba(255,255,255,0.1); color: white; border: 2px solid #4CAF50; border-radius: 10px; cursor: pointer; transition: all 0.3s; text-align: left; }
+        .mode-btn:hover { background: rgba(76, 175, 80, 0.3); transform: scale(1.02); }
+        .mode-btn small { display: block; font-size: 14px; opacity: 0.8; margin-top: 5px; font-weight: normal; }
+        .mode-btn-vz { border-color: #ff9800; }
+        .mode-btn-vz:hover { background: rgba(255, 152, 0, 0.3); }
+        
+        .lobby-input { width: 100%; padding: 15px; font-size: 20px; text-align: center; border: 2px solid #4CAF50; border-radius: 8px; background: #222; color: white; text-transform: uppercase; letter-spacing: 2px; margin: 10px 0; }
+        
+        .room-code-display { background: #111; padding: 15px; border-radius: 8px; font-size: 28px; font-weight: bold; letter-spacing: 4px; color: #4CAF50; margin: 15px 0; border: 2px dashed #4CAF50; }
+        
         .settings { margin-top: 20px; text-align: left; }
         .setting-row { margin: 15px 0; }
         .setting-row label { display: block; margin-bottom: 5px; font-size: 14px; color: #ccc; }
         .setting-row input[type="range"] { width: 100%; }
-        .setting-row select { width: 100%; padding: 10px; font-size: 16px; background: #222; color: white; border: 1px solid #555; border-radius: 5px; }
+        .setting-row select { width: 100%; padding: 12px; font-size: 16px; background: #222; color: white; border: 1px solid #555; border-radius: 5px; }
+        
         .color-picker { display: flex; justify-content: center; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
         .color-btn { width: 50px; height: 50px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform 0.2s; }
         .color-btn.selected { border-color: white; transform: scale(1.2); box-shadow: 0 0 15px rgba(255,255,255,0.7); }
+        
         .player-list { text-align: left; margin: 15px 0; max-height: 150px; overflow-y: auto; }
-        .player-item { padding: 8px; background: rgba(255,255,255,0.05); margin: 5px 0; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .player-item { padding: 10px; background: rgba(255,255,255,0.05); margin: 5px 0; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
         .player-item.ready { border-left: 4px solid #4CAF50; }
         .player-item.not-ready { border-left: 4px solid #ff9800; }
+
+        #draw-canvas { border: 2px solid #555; background: white; touch-action: none; cursor: crosshair; max-width: 100%; display: block; margin: 10px auto; border-radius: 8px; }
+        
+        .waiting-animation { width: 80px; height: 80px; margin: 20px auto; border: 5px solid rgba(255,255,255,0.1); border-top: 5px solid #4CAF50; border-radius: 50%; animation: spin 1.5s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .nav-buttons { display: flex; justify-content: center; margin-top: 20px; gap: 10px; flex-wrap: wrap; }
+        
         #game-container { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: #000; overflow: hidden; }
         .game-btn { position: absolute; padding: 8px 15px; font-size: 14px; background: rgba(0,0,0,0.6); color: white; border: 1px solid white; border-radius: 5px; z-index: 10001; cursor: pointer; }
-        #hud { position: absolute; top: 10px; left: 10px; color: #0f0; font-family: monospace; font-size: 16px; z-index: 10000; pointer-events: none; }
+        #hud { position: absolute; top: 10px; left: 10px; color: #0f0; font-family: monospace; font-size: 16px; text-shadow: 1px 1px 3px #000; z-index: 10000; pointer-events: none; }
         #minimap { position: absolute; top: 90px; right: 10px; border: 2px solid rgba(255,255,255,0.5); border-radius: 5px; background: rgba(0,0,0,0.7); z-index: 10000; display: none; }
         #victory-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 10002; justify-content: center; align-items: center; flex-direction: column; }
         .victory-content { text-align: center; }
         .victory-content h1 { font-size: 48px; color: #4CAF50; }
         .dpad-btn { position: absolute; width: 60px; height: 60px; background: rgba(255,255,255,0.2); border: 2px solid white; border-radius: 10px; color: white; font-size: 24px; cursor: pointer; z-index: 10001; }
         #joystick-zone { position: absolute; bottom: 80px; right: 30px; width: 180px; height: 180px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); z-index: 10001; }
-        #tag-btn { display: none; position: absolute; bottom: 280px; right: 30px; width: 80px; height: 80px; border-radius: 50%; background: rgba(255, 50, 50, 0.8); border: 3px solid white; color: white; font-size: 32px; font-weight: bold; z-index: 10001; cursor: pointer; }
+        #tag-btn { display: none; position: absolute; bottom: 280px; right: 30px; width: 80px; height: 80px; border-radius: 50%; background: rgba(255, 50, 50, 0.8); border: 3px solid white; color: white; font-size: 32px; font-weight: bold; z-index: 10001; cursor: pointer; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         .room-badge { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; font-size: 14px; z-index: 10001; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🎨 Labyrinth Lab</h1>
-
-        <div id="screen-main" class="screen active">
+        <p class="subtitle">Crea, comparte y juega en tiempo real</p>
+        
+        <!-- PANTALLA 1: INICIO -->
+        <div id="lobby-screen" class="screen active">
             <div class="card">
-                <h2>🛠️ Crear Nuevo Laberinto</h2>
-                <button class="btn" onclick="startCreation()">Comenzar a Crear</button>
-            </div>
-            <div class="card">
-                <h2>🎮 Unirse a una Partida</h2>
-                <div style="margin: 15px 0;">
-                    <input type="text" id="join-code-input" class="lobby-input" placeholder="CÓDIGO" maxlength="10">
+                <h2>👋 ¡Hola! ¿Qué quieres hacer hoy?</h2>
+                <div class="mode-selector">
+                    <button class="mode-btn" onclick="startAsHost()">
+                        👑 Voy a crear una sala
+                        <small>Diseña el laberinto y comparte la aventura con tus amigos</small>
+                    </button>
+                    <button class="mode-btn btn-secondary" onclick="showScreen('join-screen')">
+                        🎮 Voy a ingresar a una sala
+                        <small>Usa el código que te compartieron para unirte a la diversión</small>
+                    </button>
                 </div>
-                <button class="btn btn-secondary" onclick="joinGame()">Unirse</button>
             </div>
         </div>
 
-        <div id="screen-mode" class="screen">
-            <h2>¿Cómo quieres crearlo?</h2>
-            <button class="btn" onclick="selectMode('vectorize')">📷 Vectorizar desde foto</button>
-            <button class="btn" onclick="selectMode('json')">📂 Cargar archivo JSON</button>
-            <button class="btn btn-outline" onclick="showScreen('screen-main')">← Volver</button>
-        </div>
-
-        <div id="screen-vectorizer-wait" class="screen">
-            <h2>📷 Vectorizando...</h2>
+        <!-- PANTALLA 1B: UNIRSE -->
+        <div id="join-screen" class="screen">
             <div class="card">
-                <p>Se abrió una nueva pestaña con el generador.</p>
-                <p style="color:#4CAF50; font-weight:bold; margin:15px 0;">Completa los pasos allí y el juego te traerá de vuelta automáticamente.</p>
-                <button class="btn btn-outline" onclick="reopenVectorizer()">🔄 Reabrir Generador</button>
-                <button class="btn btn-outline" onclick="showScreen('screen-mode')">← Cancelar</button>
+                <h2>🚪 Unirse a una aventura</h2>
+                <p style="color: #aaa; margin-bottom: 15px;">Ingresa el código que te dio el creador:</p>
+                <input type="text" id="join-code-input" class="lobby-input" placeholder="Ej: LAB-123" maxlength="10">
+                <button class="btn" onclick="joinRoom()">🚀 Unirme ahora</button>
+                <button class="btn btn-back" onclick="showScreen('lobby-screen')">← Volver</button>
             </div>
         </div>
 
-        <div id="screen-json" class="screen">
-            <h2>📂 Cargar Archivo JSON</h2>
+        <!-- PANTALLA 2: MODO DE CREACIÓN (Solo para el creador) -->
+        <div id="creator-mode-screen" class="screen">
             <div class="card">
-                <input type="file" id="json-file-input" accept=".json" style="width:100%; padding:10px; background:#222; color:white; border:1px solid #555; border-radius:5px;">
-                <p id="json-status" style="margin-top:15px; color:#aaa;"></p>
-                <button class="btn" id="btn-continue-json" disabled onclick="goToConfig()">Continuar →</button>
+                <h2>🛠️ ¿Cómo quieres crear tu laberinto?</h2>
+                <div class="mode-selector">
+                    <button class="mode-btn" onclick="selectCreatorMode('draw')">
+                        🎨 Dibujar a mano alzada
+                        <small>Dibuja tu laberinto directamente en la pantalla</small>
+                    </button>
+                    <button class="mode-btn mode-btn-vz" onclick="selectCreatorMode('vectorize')">
+                        📷 Digitalizar desde una foto
+                        <small>Toma una foto a tu dibujo en papel y lo convertimos</small>
+                    </button>
+                    <button class="mode-btn" onclick="selectCreatorMode('continue')">
+                        🔄 Continuar proceso iniciado
+                        <small>Ya digitalicé el laberinto, tengo el código</small>
+                    </button>
+                    <button class="mode-btn" onclick="selectCreatorMode('json')">
+                        📂 Subir archivo .json
+                        <small>Usa un archivo que ya hayas generado antes</small>
+                    </button>
+                </div>
+                <button class="btn btn-back" onclick="showScreen('lobby-screen')">← Volver al inicio</button>
             </div>
         </div>
 
-        <div id="screen-config" class="screen">
-            <h2>⚙️ Configuración del Laberinto</h2>
-            <div class="settings card">
-                <div class="setting-row"><label>📏 Altura: <span id="height-val">2.0m</span></label><input type="range" id="height-slider" min="1.0" max="4.0" step="0.5" value="2.0"></div>
-                <div class="setting-row"><label>🧱 Material:</label>
-                    <select id="material-select">
-                        <option value="stone">🪨 Piedra</option><option value="brick">🧱 Ladrillo</option>
-                        <option value="wood">🪵 Madera</option><option value="metal">⚙️ Metal</option>
-                        <option value="crystal">💎 Cristal</option><option value="moss">🌿 Musgo</option>
-                        <option value="lava">🌋 Lava</option><option value="snow">❄️ Nieve</option>
-                    </select>
-                </div>
-                <div class="setting-row"><label>🟫 Piso:</label>
-                    <select id="floor-select">
-                        <option value="dirt">🟫 Tierra</option><option value="tile">🔲 Loseta</option>
-                        <option value="woodfloor">🪵 Madera</option><option value="grass">🌿 Hierba</option>
-                    </select>
-                </div>
-                <div class="setting-row"><label>💡 Luz ambiental: <span id="ambient-val">100%</span></label><input type="range" id="ambient-slider" min="0" max="200" step="10" value="100"></div>
+        <!-- PANTALLA 2B: CONTINUAR PROCESO -->
+        <div id="continue-process-screen" class="screen">
+            <div class="card">
+                <h2>🔄 Recuperar laberinto</h2>
+                <p style="color: #aaa; margin-bottom: 15px;">Ingresa el código que te dio el generador:</p>
+                <input type="text" id="continue-code-input" class="lobby-input" placeholder="Ej: LAB-XYZ" maxlength="10">
+                <button class="btn" onclick="recoverMaze()">🔍 Buscar y Continuar</button>
+                <button class="btn btn-back" onclick="showScreen('creator-mode-screen')">← Volver</button>
+            </div>
+        </div>
+
+        <!-- PANTALLA 2C: ESPERA DEL VECTORIZADOR -->
+        <div id="vectorizer-wait-screen" class="screen">
+            <div class="card">
+                <h2>📷 Digitalizando tu laberinto...</h2>
+                <div class="waiting-animation"></div>
+                <p style="margin: 15px 0;">Se abrió una nueva pestaña con el generador.</p>
+                <p style="color: #4CAF50; font-weight: bold;">Completa los pasos allí y el juego te traerá de vuelta automáticamente.</p>
+                <button class="btn btn-back" onclick="showScreen('creator-mode-screen')" style="margin-top: 15px;">← Cancelar y volver</button>
+            </div>
+        </div>
+
+        <!-- PANTALLA 2D: SUBIR JSON -->
+        <div id="json-upload-screen" class="screen">
+            <div class="card">
+                <h2>📂 Cargar archivo JSON</h2>
+                <input type="file" id="json-file-input" accept=".json" style="width:100%; padding:10px; background:#222; color:white; border:1px solid #555; border-radius:5px; margin: 15px 0;">
+                <p id="json-load-status" style="color: #aaa; margin-bottom: 15px;"></p>
+                <button class="btn" id="btn-continue-json" disabled onclick="goToSettingsFromJson()">Continuar →</button>
+                <button class="btn btn-back" onclick="showScreen('creator-mode-screen')">← Volver</button>
+            </div>
+        </div>
+
+        <!-- PANTALLA 3: CONFIGURACIÓN DEL LABERINTO -->
+        <div id="settings-screen" class="screen">
+            <div class="card">
+                <h2>⚙️ Personaliza tu aventura</h2>
                 
-                <div class="setting-row" style="border-top: 2px solid #4CAF50; padding-top: 15px; margin-top: 20px;">
-                    <label>👥 Jugadores necesarios para iniciar:</label>
-                    <select id="max-players-select" style="width:100%; padding:10px; font-size:18px; background:#222; color:white; border:2px solid #4CAF50; border-radius:5px; margin-top:5px; text-align:center;">
-                        <option value="1" selected>1 jugador (Prueba)</option>
-                        <option value="2">2 jugadores</option>
-                        <option value="3">3 jugadores</option>
-                        <option value="4">4 jugadores</option>
-                        <option value="5">5 jugadores</option>
-                    </select>
+                <div class="settings">
+                    <div class="setting-row">
+                        <label>👥 ¿Cuántos jugadores participarán? (incluyéndote)</label>
+                        <select id="player-count-select">
+                            <option value="1">1 jugador (solo yo, para probar)</option>
+                            <option value="2" selected>2 jugadores (yo + 1 invitado)</option>
+                            <option value="3">3 jugadores (yo + 2 invitados)</option>
+                            <option value="4">4 jugadores (yo + 3 invitados)</option>
+                            <option value="5">5 jugadores (yo + 4 invitados)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="setting-row">
+                        <label>🎯 Modo de juego</label>
+                        <select id="game-mode-select">
+                            <option value="normal">🏃 Normal (Solo llegar a la meta)</option>
+                            <option value="todos">⚔️ Todos contra todos (¡Todos tienen stick! Si te tocan, vuelves al inicio)</option>
+                            <option value="lleva">🏃 La lleva (Aleatorio): Un jugador al azar tendrá el stick, saldrá cerca de la meta y será el único que pueda tocar a los demás.</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-row"><label>📏 Altura de paredes: <span id="height-val">2.0m</span></label><input type="range" id="height-slider" min="1.0" max="4.0" step="0.5" value="2.0"></div>
+                    <div class="setting-row"><label>🧱 Material de paredes:</label>
+                        <select id="material-select">
+                            <option value="stone">🪨 Piedra</option><option value="brick">🧱 Ladrillo</option>
+                            <option value="wood">🪵 Madera</option><option value="metal">⚙️ Metal</option>
+                            <option value="crystal">💎 Cristal</option><option value="moss">🌿 Musgo</option>
+                            <option value="lava">🌋 Lava</option><option value="snow">❄️ Nieve</option>
+                        </select>
+                    </div>
+                    <div class="setting-row"><label>🟫 Textura del piso:</label>
+                        <select id="floor-select">
+                            <option value="dirt">🟫 Tierra</option><option value="tile">🔲 Loseta</option>
+                            <option value="woodfloor">🪵 Madera</option><option value="grass">🌿 Hierba</option>
+                        </select>
+                    </div>
+                    <div class="setting-row"><label>💡 Luz ambiental: <span id="ambient-val">100%</span></label><input type="range" id="ambient-slider" min="0" max="200" step="10" value="100"></div>
                 </div>
-                
-                <div class="setting-row">
-                    <label>🎯 Modo de juego:</label>
-                    <select id="game-mode-select" style="width:100%; padding:10px; font-size:16px; background:#222; color:white; border:1px solid #555; border-radius:5px; margin-top:5px;">
-                        <option value="normal">🏃 Normal (Solo llegar a la meta)</option>
-                        <option value="laLleva">🏃 La Lleva (Un jugador tiene el stick)</option>
-                    </select>
+
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.2);">
+                    <label style="color: #aaa; font-size: 14px;">🔗 Código de tu sala (compártelo con tus amigos):</label>
+                    <div class="room-code-display" id="settings-room-code">---</div>
+                    <button class="btn btn-secondary" onclick="copyRoomCode()" style="width: auto; padding: 10px 20px; font-size: 16px;">📋 Copiar Código</button>
                 </div>
+
+                <button class="btn" style="margin-top: 20px;" onclick="enterWaitingRoom()">🚪 Continuar a la Sala de Espera</button>
+                <button class="btn btn-back" onclick="showScreen('creator-mode-screen')">← Volver</button>
             </div>
-            <button class="btn" onclick="generateRoomCode()">💾 Guardar y Generar Código</button>
         </div>
 
-        <div id="screen-lobby" class="screen">
-            <h2>🚪 Sala de Espera</h2>
+        <!-- PANTALLA 4: SALA DE ESPERA (Unificada para todos) -->
+        <div id="waiting-screen" class="screen">
             <div class="card">
-                <p style="color:#aaa; font-size:14px;">Código de la partida:</p>
-                <div class="code-display" id="lobby-room-code">---</div>
-                <button class="btn btn-outline" onclick="copyRoomCode()" style="padding:10px; font-size:16px;">📋 Copiar Código</button>
-            </div>
-
-            <div class="card">
-                <h3>🎨 Elige tu color</h3>
-                <div class="color-picker" id="lobby-color-picker">
+                <h2>🚪 Sala de Espera</h2>
+                <p style="color: #aaa; font-size: 14px; margin-bottom: 5px;">Código de la partida:</p>
+                <div class="room-code-display" id="waiting-room-code" style="font-size: 24px; padding: 10px;">---</div>
+                
+                <h3 style="margin-top: 20px; color: #4CAF50;">🎨 Elige tu color</h3>
+                <div class="color-picker" id="waiting-color-picker">
                     <div class="color-btn" style="background:#ff0000;" data-color="#ff0000"></div>
                     <div class="color-btn" style="background:#0066ff;" data-color="#0066ff"></div>
                     <div class="color-btn" style="background:#00ff00;" data-color="#00ff00"></div>
@@ -149,17 +236,34 @@
                     <div class="color-btn" style="background:#ff00ff;" data-color="#ff00ff"></div>
                     <div class="color-btn" style="background:#ffffff;" data-color="#ffffff"></div>
                 </div>
-                <p id="color-status" style="color:#ff9800; font-size:14px;">⚠️ Selecciona un color</p>
-            </div>
+                <p id="color-status" style="color:#ff9800; font-size:14px;">⚠️ Selecciona un color para continuar</p>
 
-            <div class="card">
-                <h3 id="ready-status-text">Jugadores listos: 0 / 1</h3>
+                <h3 id="ready-status-text" style="margin-top: 20px;">Jugadores listos: 0 / 1</h3>
                 <div class="player-list" id="player-list"></div>
+                
                 <button id="btn-ready" class="btn" disabled onclick="toggleReady()">✅ Estoy Listo</button>
+                <button class="btn btn-back" onclick="leaveRoom()" style="margin-top: 10px;">← Salir de la sala</button>
             </div>
         </div>
-    </div>
 
+        <!-- PANTALLA 5: EDITOR DE DIBUJO (Solo si elige dibujar) -->
+        <div id="game-screen" class="screen">
+            <div class="card">
+                <h2>🖌️ Dibuja tu Laberinto</h2>
+                <p style="color:#aaa; font-size:14px; margin-bottom: 10px;">Dibuja las paredes (negro) y deja los caminos (blanco).</p>
+                <div style="text-align:center; margin:10px 0;">
+                    <button onclick="setDrawColor('black')" style="background:black; color:white; padding:8px 15px; border-radius:5px; border:2px solid #555; margin: 2px;">⬛ Pared</button>
+                    <button onclick="setDrawColor('white')" style="background:white; color:black; padding:8px 15px; border-radius:5px; border:2px solid #555; margin: 2px;">⬜ Borrar</button>
+                    <button onclick="clearCanvas()" style="background:#ff4444; color:white; padding:8px 15px; border-radius:5px; border:none; margin: 2px;">🗑️ Limpiar</button>
+                </div>
+                <canvas id="draw-canvas" width="420" height="420"></canvas>
+                <button class="btn" style="margin-top: 15px;" onclick="goToSettingsFromDraw()">✅ Terminar dibujo y Configurar</button>
+                <button class="btn btn-back" onclick="showScreen('creator-mode-screen')">← Cancelar</button>
+            </div</div>
+        </div>
+    </div>
+    
+    <!-- CONTENEDOR 3D -->
     <div id="game-container">
         <div class="room-badge" id="game-room-badge">Sala: ---</div>
         <button class="game-btn" style="top:10px; right:10px;" onclick="location.reload()">✖️ Salir</button>
@@ -187,7 +291,7 @@
     <script src="https://cdn.jsdelivr.net/npm/nipplejs@0.10.1/dist/nipplejs.min.js"></script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-        import { getDatabase, ref, set, update, onValue, get, onDisconnect } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+        import { getDatabase, ref, set, update, onValue, get, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyD5zPrdCB4GYZ6O0QORDNZA756YvAW7ztQ",
@@ -200,13 +304,13 @@
         };
 
         let db;
-        try { db = getDatabase(initializeApp(firebaseConfig)); } catch (e) { alert("Error Firebase"); }
+        try { db = getDatabase(initializeApp(firebaseConfig)); } catch (e) { alert("Error conectando a Firebase"); }
 
         let playerId = localStorage.getItem('ll_pid') || Math.random().toString(36).substr(2, 9);
         localStorage.setItem('ll_pid', playerId);
         
-        let roomId = "", isCreator = false, myColor = localStorage.getItem('ll_color') || "#ff0000";
-        let mazeData = { gridSize: 21, grid: [], goal: null, startPosition: null, settings: {} };
+        let roomId = "", isHost = false, myColor = localStorage.getItem('ll_color') || "#ff0000";
+        let mazeData = { gridSize: 21, grid: [], goal: {x:19, y:19}, startPosition: {x:1, y:1}, settings: {} };
         let players = {}, gameStarted = false, gameWon = false, isReady = false;
         let localPlayer = { x: 0, z: 0, yaw: 0, pitch: 0, speed: 3.0, rotSpeed: 2.0, hasStick: false, startX: 0, startZ: 0 };
         let lastDbUpdate = 0, stepCooldown = 0, respawnCooldown = 0;
@@ -219,63 +323,92 @@
             window.scrollTo(0, 0);
         };
 
-        window.startCreation = () => { isCreator = true; showScreen('screen-mode'); };
-        
-        window.selectMode = (mode) => {
-            if (mode === 'vectorize') { 
-                showScreen('screen-vectorizer-wait'); 
-                const tempRoom = "LAB-" + Math.random().toString(36).substr(2, 4).toUpperCase();
-                window.open(`https://caanrique.github.io/Labyrinth-converter/?room=${tempRoom}&returning=true`, '_blank');
-                roomId = tempRoom;
-            }
-            else if (mode === 'json') { showScreen('screen-json'); }
+        // --- FLUJO DEL CREADOR ---
+        window.startAsHost = () => {
+            roomId = "LAB-" + Math.random().toString(36).substr(2, 4).toUpperCase();
+            isHost = true;
+            document.getElementById('settings-room-code').textContent = roomId;
+            document.getElementById('waiting-room-code').textContent = roomId;
+            showScreen('creator-mode-screen');
         };
 
+        window.selectCreatorMode = (mode) => {
+            if (mode === 'draw') {
+                showScreen('game-screen');
+                initCanvas();
+            } else if (mode === 'vectorize') {
+                showScreen('vectorizer-wait-screen');
+                window.open(`https://caanrique.github.io/Labyrinth-converter/?room=${roomId}&returning=true`, '_blank');
+            } else if (mode === 'continue') {
+                showScreen('continue-process-screen');
+            } else if (mode === 'json') {
+                showScreen('json-upload-screen');
+            }
+        };
+
+        window.recoverMaze = async () => {
+            const code = document.getElementById('continue-code-input').value.trim().toUpperCase();
+            if (!code) return alert("Por favor, ingresa un código.");
+            
+            const snap = await get(ref(db, `rooms/${code}`));
+            if (snap.exists() && snap.val().creatorId === playerId) {
+                roomId = code;
+                mazeData = snap.val().mazeData || mazeData;
+                document.getElementById('settings-room-code').textContent = roomId;
+                showScreen('settings-screen');
+            } else {
+                alert("No encontramos un laberinto con ese código. Verifica que lo hayas generado recientemente.");
+            }
+        };
+
+        // Retorno automático desde el vectorizador
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('returning') === 'true' && urlParams.get('room')) {
             roomId = urlParams.get('room');
-            isCreator = true;
+            isHost = true;
             setTimeout(async () => {
                 const snap = await get(ref(db, `rooms/${roomId}`));
                 if (snap.exists() && snap.val().creatorId === playerId) {
                     mazeData = snap.val().mazeData || mazeData;
-                    showScreen('screen-config');
+                    document.getElementById('settings-room-code').textContent = roomId;
+                    showScreen('settings-screen');
                 } else {
-                    showScreen('screen-main');
+                    showScreen('lobby-screen');
                 }
             }, 1000);
         }
 
-        document.getElementById('json-file-input').addEventListener('change', (e) => {
-            const file = e.target.files[0]; if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                try {
-                    const json = JSON.parse(ev.target.result);
-                    if (!json.gridSize || !json.grid || !json.start || !json.goal) throw new Error("Invalid");
-                    mazeData = { gridSize: json.gridSize, grid: json.grid, goal: json.goal, startPosition: json.start, settings: {} };
-                    document.getElementById('json-status').textContent = "✅ Cargado";
-                    document.getElementById('json-status').style.color = "#4CAF50";
-                    document.getElementById('btn-continue-json').disabled = false;
-                } catch (err) {
-                    document.getElementById('json-status').textContent = "❌ Archivo inválido";
-                    document.getElementById('json-status').style.color = "#ff4444";
-                }
-            };
-            reader.readAsText(file);
-        });
-
-        window.goToConfig = () => showScreen('screen-config');
-        
-        ['height', 'ambient'].forEach(id => {
-            document.getElementById(id+'-slider').oninput = function() {
-                document.getElementById(id+'-val').textContent = this.value + (id==='height'?'m':'%');
-            };
-        });
-
-        window.generateRoomCode = async () => {
-            if (!roomId) roomId = "LAB-" + Math.random().toString(36).substr(2, 4).toUpperCase();
+        // --- FLUJO DEL JUGADOR ---
+        window.joinRoom = async () => {
+            const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+            if (!code) return alert("Ingresa un código.");
             
+            const snap = await get(ref(db, `rooms/${code}`));
+            if (!snap.exists()) return alert("❌ Esa sala no existe. Verifica el código.");
+            
+            const data = snap.val();
+            const currentPlayers = Object.keys(data.players || {}).length;
+            if (currentPlayers >= data.maxPlayers) {
+                return alert("❌ La sala está llena. Pídele al creador que abra una nueva.");
+            }
+
+            roomId = code;
+            isHost = false;
+            mazeData = data.mazeData || mazeData;
+            document.getElementById('waiting-room-code').textContent = roomId;
+            showScreen('waiting-screen');
+            setupWaitingRoom();
+        };
+
+        // --- CONFIGURACIÓN Y SALA DE ESPERA ---
+        window.goToSettingsFromDraw = () => {
+            // Aquí se procesaría el canvas a grid en una implementación completa
+            showScreen('settings-screen');
+        };
+
+        window.goToSettingsFromJson = () => showScreen('settings-screen');
+
+        window.enterWaitingRoom = async () => {
             mazeData.settings = {
                 height: parseFloat(document.getElementById('height-slider').value),
                 material: document.getElementById('material-select').value,
@@ -286,39 +419,24 @@
             await set(ref(db, `rooms/${roomId}`), {
                 creatorId: playerId,
                 mazeData: mazeData,
-                maxPlayers: parseInt(document.getElementById('max-players-select').value),
+                maxPlayers: parseInt(document.getElementById('player-count-select').value),
                 gameMode: document.getElementById('game-mode-select').value,
                 gameStarted: false,
-                players: {}
+                players: { [playerId]: { color: myColor, ready: false, hasStick: false } }
             });
 
-            document.getElementById('lobby-room-code').textContent = roomId;
-            showScreen('screen-lobby');
-            joinLobbyLogic();
+            showScreen('waiting-screen');
+            setupWaitingRoom();
         };
 
-        window.joinGame = async () => {
-            const code = document.getElementById('join-code-input').value.trim().toUpperCase();
-            if (!code) return alert("Ingresa un código");
-            roomId = code;
-            isCreator = false;
-            
-            const snap = await get(ref(db, `rooms/${roomId}`));
-            if (!snap.exists()) return alert("Sala no encontrada");
-            
-            document.getElementById('lobby-room-code').textContent = roomId;
-            showScreen('screen-lobby');
-            joinLobbyLogic();
-        };
-
-        function joinLobbyLogic() {
-            document.querySelectorAll('#lobby-color-picker .color-btn').forEach(btn => {
+        function setupWaitingRoom() {
+            document.querySelectorAll('#waiting-color-picker .color-btn').forEach(btn => {
                 btn.onclick = () => {
-                    document.querySelectorAll('#lobby-color-picker .color-btn').forEach(b => b.classList.remove('selected'));
+                    document.querySelectorAll('#waiting-color-picker .color-btn').forEach(b => b.classList.remove('selected'));
                     btn.classList.add('selected');
                     myColor = btn.dataset.color;
                     localStorage.setItem('ll_color', myColor);
-                    document.getElementById('color-status').textContent = "✅ Color seleccionado";
+                    document.getElementById('color-status').textContent = "✅ ¡Color seleccionado!";
                     document.getElementById('color-status').style.color = "#4CAF50";
                     document.getElementById('btn-ready').disabled = false;
                     updatePlayerData();
@@ -326,7 +444,7 @@
                 if (btn.dataset.color === myColor) btn.click();
             });
 
-            onValue(ref(db, `rooms/${roomId}`), async (snapshot) => {
+            onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
                 
@@ -336,18 +454,20 @@
                 const list = document.getElementById('player-list');
                 list.innerHTML = '';
                 let readyCount = 0;
+                
                 Object.entries(players).forEach(([pid, p]) => {
                     if (p.ready) readyCount++;
                     const div = document.createElement('div');
                     div.className = `player-item ${p.ready ? 'ready' : 'not-ready'}`;
-                    div.innerHTML = `<span style="color:${p.color}">● Jugador</span> <span>${p.ready ? '✅' : '⏳'}</span>`;
+                    div.innerHTML = `<span style="color:${p.color || '#fff'}">● Jugador</span> <span>${p.ready ? '✅ Listo' : '⏳ Esperando'}</span>`;
                     list.appendChild(div);
                 });
 
                 document.getElementById('ready-status-text').textContent = `Jugadores listos: ${readyCount} / ${maxP}`;
 
+                // 🌟 INICIO AUTOMÁTICO CUANDO TODOS ESTÁN LISTOS
                 if (readyCount >= maxP && !data.gameStarted) {
-                    await assignStickAndStart(data);
+                    assignRolesAndStart(data);
                 }
 
                 if (data.gameStarted && !gameStarted) {
@@ -359,43 +479,34 @@
             onDisconnect(ref(db, `rooms/${roomId}/players/${playerId}`)).remove();
         }
 
-        async function assignStickAndStart(data) {
-            const playerIds = Object.keys(players);
-            const gameMode = data.gameMode || 'normal';
-            
-            if (gameMode === 'laLleva' && playerIds.length > 0) {
-                const randomIndex = Math.floor(Math.random() * playerIds.length);
-                const stickHolder = playerIds[randomIndex];
-                
-                const updates = {};
+        async function assignRolesAndStart(data) {
+            const playerIds = Object.keys(data.players);
+            const mode = data.gameMode || 'normal';
+            const updates = {};
+
+            if (mode === 'lleva' && playerIds.length > 0) {
+                // Elegir al azar quién la lleva
+                const randomIdx = Math.floor(Math.random() * playerIds.length);
+                const stickHolder = playerIds[randomIdx];
+                const goal = data.mazeData.goal || {x: 19, y: 19};
+
                 playerIds.forEach((pid, idx) => {
-                    const hasStick = (pid === stickHolder);
-                    updates[`players/${pid}/hasStick`] = hasStick;
-                    
-                    if (hasStick && data.mazeData.goal) {
-                        const goal = data.mazeData.goal;
-                        let bestPos = { x: goal.x - 2, y: goal.y - 2 };
-                        for (let dy = -3; dy <= 3; dy++) {
-                            for (let dx = -3; dx <= 3; dx++) {
-                                const nx = goal.x + dx;
-                                const ny = goal.y + dy;
-                                if (nx >= 0 && nx < data.mazeData.gridSize && ny >= 0 && ny < data.mazeData.gridSize) {
-                                    if (data.mazeData.grid[ny][nx] === 0) {
-                                        bestPos = { x: nx, y: ny };
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        updates[`players/${pid}/startX`] = bestPos.x;
-                        updates[`players/${pid}/startZ`] = bestPos.y;
+                    updates[`players/${pid}/hasStick`] = (pid === stickHolder);
+                    if (pid === stickHolder) {
+                        // Poner al que la lleva cerca de la meta
+                        updates[`players/${pid}/startX`] = Math.max(1, goal.x - 2);
+                        updates[`players/${pid}/startZ`] = Math.max(1, goal.y - 2);
                     } else {
-                        const startPos = data.mazeData.startPosition || { x: 1, y: 1 };
-                        updates[`players/${pid}/startX`] = startPos.x + idx;
-                        updates[`players/${pid}/startZ`] = startPos.y + idx;
+                        const start = data.mazeData.startPosition || {x: 1, y: 1};
+                        updates[`players/${pid}/startX`] = start.x;
+                        updates[`players/${pid}/startZ`] = start.y;
                     }
                 });
-                
+            } else if (mode === 'todos') {
+                playerIds.forEach(pid => { updates[`players/${pid}/hasStick`] = true; });
+            }
+
+            if (Object.keys(updates).length > 0) {
                 await update(ref(db, `rooms/${roomId}`), updates);
             }
             
@@ -404,28 +515,70 @@
 
         function updatePlayerData() {
             if (!roomId) return;
-            update(ref(db, `rooms/${roomId}/players/${playerId}`), {
-                color: myColor,
-                ready: isReady
-            });
+            update(ref(db, `rooms/${roomId}/players/${playerId}`), { color: myColor, ready: isReady });
         }
 
         window.toggleReady = () => {
             isReady = !isReady;
             const btn = document.getElementById('btn-ready');
-            btn.textContent = isReady ? "❌ No estoy listo" : "✅ Estoy Listo";
+            btn.textContent = isReady ? "❌ Ya no estoy listo" : "✅ Estoy Listo";
             btn.style.background = isReady ? "#ff9800" : "#4CAF50";
             updatePlayerData();
         };
 
         window.copyRoomCode = () => {
-            navigator.clipboard.writeText(roomId).then(() => alert("¡Código copiado!"));
+            navigator.clipboard.writeText(roomId).then(() => alert("✅ ¡Código copiado! Compártelo con tus amigos."));
         };
 
-        window.reopenVectorizer = () => {
-            window.open(`https://caanrique.github.io/Labyrinth-converter/?room=${roomId}&returning=true`, '_blank');
+        window.leaveRoom = async () => {
+            if (roomId && db) { await remove(ref(db, `rooms/${roomId}/players/${playerId}`)); }
+            location.reload();
         };
 
+        // --- EDITOR DE DIBUJO ---
+        let isDrawing = false, drawColor = 'black';
+        const canvas = document.getElementById('draw-canvas');
+        const ctx = canvas.getContext('2d');
+        window.initCanvas = () => {
+            ctx.fillStyle = 'white'; ctx.fillRect(0, 0, 420, 420);
+            canvas.addEventListener('mousedown', e => { isDrawing = true; draw(e); });
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', () => isDrawing = false);
+            canvas.addEventListener('touchstart', e => { isDrawing = true; draw(e); e.preventDefault(); }, {passive:false});
+            canvas.addEventListener('touchmove', e => { draw(e); e.preventDefault(); }, {passive:false});
+            canvas.addEventListener('touchend', () => isDrawing = false);
+        };
+        window.setDrawColor = (c) => drawColor = c;
+        window.clearCanvas = () => { ctx.fillStyle = 'white'; ctx.fillRect(0, 0, 420, 420); };
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+            ctx.fillStyle = drawColor; ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI*2); ctx.fill();
+        }
+
+        // --- JSON UPLOAD ---
+        document.getElementById('json-file-input').addEventListener('change', (e) => {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const json = JSON.parse(ev.target.result);
+                    if (!json.gridSize || !json.grid || !json.start || !json.goal) throw new Error("Invalid");
+                    mazeData = { gridSize: json.gridSize, grid: json.grid, goal: json.goal, startPosition: json.start, settings: {} };
+                    document.getElementById('json-load-status').textContent = "✅ ¡Archivo cargado correctamente!";
+                    document.getElementById('json-load-status').style.color = "#4CAF50";
+                    document.getElementById('btn-continue-json').disabled = false;
+                } catch (err) {
+                    document.getElementById('json-load-status').textContent = "❌ Archivo inválido. Asegúrate de que sea un JSON del generador.";
+                    document.getElementById('json-load-status').style.color = "#ff4444";
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // --- MOTOR 3D (THREE.JS) ---
         let scene, camera, renderer, playerAvatars = {}, joystick = null, gameCanvas;
 
         function start3DGame(mData, allPlayers) {
@@ -465,11 +618,11 @@
             scene.add(pLight);
             window._playerLight = pLight;
 
+            // Texturas procedurales mejoradas
             const texCanvas = document.createElement('canvas');
             texCanvas.width = 256; texCanvas.height = 256;
             const tCtx = texCanvas.getContext('2d');
             const mat = mData.settings.material || 'stone';
-            
             const colors = { stone:'#6b6b6b', brick:'#8b4513', wood:'#6b4423', metal:'#888', crystal:'#2a4d8f', moss:'#5a5a4a', lava:'#2a1a1a', snow:'#e8f0ff' };
             tCtx.fillStyle = colors[mat] || '#666';
             tCtx.fillRect(0,0,256,256);
@@ -494,7 +647,6 @@
             const wallTex = new THREE.CanvasTexture(texCanvas);
             wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping;
             wallTex.repeat.set(2, 2);
-            
             const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.8 });
             const floorMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9 });
 
@@ -574,10 +726,7 @@
                     if (dist < 1.5) targetId = pid;
                 });
                 if (targetId) {
-                    update(ref(db, `rooms/${roomId}/players/${targetId}`), { 
-                        x: localPlayer.startX, 
-                        z: localPlayer.startZ 
-                    });
+                    update(ref(db, `rooms/${roomId}/players/${targetId}`), { x: players[targetId].startX || 1, z: players[targetId].startZ || 1 });
                 }
             };
 
@@ -665,6 +814,12 @@
                     }
                 });
             });
+            
+            // Victoria simple (cerca de 19,19 para demo)
+            if (Math.sqrt((localPlayer.x - 19)**2 + (localPlayer.z - 9)**2) < 1.5) { // Ajusta según tu meta real
+                // gameWon = true;
+                // document.getElementById('victory-overlay').style.display = 'flex';
+            }
             
             renderer.render(scene, camera);
         }
