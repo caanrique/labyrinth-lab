@@ -973,7 +973,7 @@ function setupWaitingRoom() {
                 isMoving = true;
             }
             
-            const r = 0.1; // Radio del jugador (0.2 deja 0.3 de margen libre en un pasillo de 1.0)
+            const r = 0.15; // Radio del jugador (0.2 deja 0.3 de margen libre en un pasillo de 1.0)
             const size = mazeData.gridSize;
             const grid = mazeData.grid;
             
@@ -984,8 +984,8 @@ function setupWaitingRoom() {
                 // --- COLISIÓN EN EJE X ---
                 let canMoveX = true;
                 const checkX = Math.floor(nextX + (mx > 0 ? r : -r));
-                const checkZ1 = Math.floor(localPlayer.z - r + 0.01);
-                const checkZ2 = Math.floor(localPlayer.z + r - 0.01);
+                const checkZ1 = Math.floor(localPlayer.z - r + 0.05);
+                const checkZ2 = Math.floor(localPlayer.z + r - 0.05);
                 
                 if (checkX < 0 || checkX >= size || checkZ1 < 0 || checkZ1 >= size || checkZ2 < 0 || checkZ2 >= size) {
                     canMoveX = false;
@@ -999,8 +999,8 @@ function setupWaitingRoom() {
                 // --- COLISIÓN EN EJE Z ---
                 let canMoveZ = true;
                 const checkZ = Math.floor(nextZ + (mz > 0 ? r : -r));
-                const checkX1 = Math.floor(localPlayer.x - r + 0.01);
-                const checkX2 = Math.floor(localPlayer.x + r - 0.01);
+                const checkX1 = Math.floor(localPlayer.x - r + 0.05);
+                const checkX2 = Math.floor(localPlayer.x + r - 0.05);
                 
                 if (checkZ < 0 || checkZ >= size || checkX1 < 0 || checkX1 >= size || checkX2 < 0 || checkX2 >= size) {
                     canMoveZ = false;
