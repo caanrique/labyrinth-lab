@@ -23,6 +23,9 @@
         .btn:disabled { background: #555; cursor: not-allowed; transform: none; }
         .btn-secondary { background: #0066ff; }
         .btn-secondary:hover { background: #0052cc; }
+        .btn-start-game { background: #ff9800; animation: pulse 1.5s infinite; }
+        .btn-start-game:hover { background: #e68900; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         .btn-back { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); width: auto; padding: 10px 20px; font-size: 16px; }
         .btn-back:hover { background: rgba(255,255,255,0.2); }
         
@@ -57,8 +60,6 @@
         .waiting-animation { width: 80px; height: 80px; margin: 20px auto; border: 5px solid rgba(255,255,255,0.1); border-top: 5px solid #4CAF50; border-radius: 50%; animation: spin 1.5s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        .nav-buttons { display: flex; justify-content: center; margin-top: 20px; gap: 10px; flex-wrap: wrap; }
-        
         #game-container { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9999; background: #000; overflow: hidden; }
         .game-btn { position: absolute; padding: 8px 15px; font-size: 14px; background: rgba(0,0,0,0.6); color: white; border: 1px solid white; border-radius: 5px; z-index: 10001; cursor: pointer; }
         #hud { position: absolute; top: 10px; left: 10px; color: #0f0; font-family: monospace; font-size: 16px; text-shadow: 1px 1px 3px #000; z-index: 10000; pointer-events: none; }
@@ -69,7 +70,6 @@
         .dpad-btn { position: absolute; width: 60px; height: 60px; background: rgba(255,255,255,0.2); border: 2px solid white; border-radius: 10px; color: white; font-size: 24px; cursor: pointer; z-index: 10001; }
         #joystick-zone { position: absolute; bottom: 80px; right: 30px; width: 180px; height: 180px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); z-index: 10001; }
         #tag-btn { display: none; position: absolute; bottom: 280px; right: 30px; width: 80px; height: 80px; border-radius: 50%; background: rgba(255, 50, 50, 0.8); border: 3px solid white; color: white; font-size: 32px; font-weight: bold; z-index: 10001; cursor: pointer; animation: pulse 1s infinite; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         .room-badge { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; font-size: 14px; z-index: 10001; }
     </style>
 </head>
@@ -231,6 +231,7 @@
                 <div class="player-list" id="player-list"></div>
                 
                 <button id="btn-ready" class="btn" disabled onclick="toggleReady()">✅ Estoy Listo</button>
+                <button id="btn-start-game" class="btn btn-start-game" style="display: none; margin-top: 10px;" onclick="startGame()">🎮 ¡Iniciar Partida!</button>
                 <button class="btn btn-back" onclick="leaveRoom()" style="margin-top: 10px;">← Salir de la sala</button>
             </div>
         </div>
@@ -380,7 +381,6 @@
             setupWaitingRoom();
         };
 
-        window.goToSettingsFromDraw = () => showScreen('settings-screen');
         window.goToSettingsFromJson = () => showScreen('settings-screen');
 
         window.enterWaitingRoom = async () => {
@@ -434,16 +434,22 @@
                 });
                 document.getElementById('ready-status-text').textContent = `Jugadores listos: ${readyCount} / ${maxP}`;
 
-                if (readyCount >= maxP && !data.gameStarted) {
-                    assignRolesAndStart(data);
-                }
-                if (data.gameStarted && !gameStarted) {
-                    start3DGame(data.mazeData, players);
+                // Mostrar botón de iniciar solo cuando todos están listos y es el host
+                const btnStartGame = document.getElementById('btn-start-game');
+                if (readyCount >= maxP && isHost) {
+                    btnStartGame.style.display = 'block';
+                } else {
+                    btnStartGame.style.display = 'none';
                 }
             });
             updatePlayerData();
             onDisconnect(ref(db, `rooms/${roomId}/players/${playerId}`)).remove();
         }
+
+        window.startGame = async () => {
+            const data = (await get(ref(db, `rooms/${roomId}`))).val();
+            await assignRolesAndStart(data);
+        };
 
         async function assignRolesAndStart(data) {
             const playerIds = Object.keys(data.players);
@@ -493,27 +499,100 @@
             location.reload();
         };
 
+        // 🎨 TABLERO DE DIBUJO CON LÓGICA DE CELDAS
         let isDrawing = false, drawColor = 'black';
+        const GRID_SIZE_DRAW = 21;
         const canvas = document.getElementById('draw-canvas');
         const ctx = canvas.getContext('2d');
+        
         window.initCanvas = () => {
-            ctx.fillStyle = 'white'; ctx.fillRect(0, 0, 420, 420);
-            canvas.addEventListener('mousedown', e => { isDrawing = true; draw(e); });
-            canvas.addEventListener('mousemove', draw);
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, 420, 420);
+            
+            // Dibujar cuadrícula
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            const cellSize = 420 / GRID_SIZE_DRAW;
+            for (let i = 0; i <= GRID_SIZE_DRAW; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * cellSize, 0);
+                ctx.lineTo(i * cellSize, 420);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, i * cellSize);
+                ctx.lineTo(420, i * cellSize);
+                ctx.stroke();
+            }
+            
+            canvas.addEventListener('mousedown', (e) => { isDrawing = true; drawCell(e); });
+            canvas.addEventListener('mousemove', (e) => { if (isDrawing) drawCell(e); });
             canvas.addEventListener('mouseup', () => isDrawing = false);
-            canvas.addEventListener('touchstart', e => { isDrawing = true; draw(e); e.preventDefault(); }, {passive:false});
-            canvas.addEventListener('touchmove', e => { draw(e); e.preventDefault(); }, {passive:false});
+            canvas.addEventListener('mouseleave', () => isDrawing = false);
+            canvas.addEventListener('touchstart', (e) => { isDrawing = true; drawCell(e); e.preventDefault(); }, {passive:false});
+            canvas.addEventListener('touchmove', (e) => { if (isDrawing) drawCell(e); e.preventDefault(); }, {passive:false});
             canvas.addEventListener('touchend', () => isDrawing = false);
         };
-        window.setDrawColor = (c) => drawColor = c;
-        window.clearCanvas = () => { ctx.fillStyle = 'white'; ctx.fillRect(0, 0, 420, 420); };
-        function draw(e) {
-            if (!isDrawing) return;
+        
+        function drawCell(e) {
             const rect = canvas.getBoundingClientRect();
-            const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-            const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-            ctx.fillStyle = drawColor; ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI*2); ctx.fill();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = ((e.touches ? e.touches[0].clientX : e.clientX) - rect.left) * scaleX;
+            const y = ((e.touches ? e.touches[0].clientY : e.clientY) - rect.top) * scaleY;
+            
+            const cellSize = 420 / GRID_SIZE_DRAW;
+            const col = Math.floor(x / cellSize);
+            const row = Math.floor(y / cellSize);
+            
+            if (col >= 0 && col < GRID_SIZE_DRAW && row >= 0 && row < GRID_SIZE_DRAW) {
+                ctx.fillStyle = drawColor;
+                ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+                
+                // Redibujar bordes de la celda
+                ctx.strokeStyle = '#ddd';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(col * cellSize, row * cellSize, cellSize, cellSize);
+            }
         }
+        
+        window.setDrawColor = (c) => drawColor = c;
+        window.clearCanvas = () => {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, 420, 420);
+            // Redibujar cuadrícula
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            const cellSize = 420 / GRID_SIZE_DRAW;
+            for (let i = 0; i <= GRID_SIZE_DRAW; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * cellSize, 0);
+                ctx.lineTo(i * cellSize, 420);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, i * cellSize);
+                ctx.lineTo(420, i * cellSize);
+                ctx.stroke();
+            }
+        };
+
+        window.goToSettingsFromDraw = () => {
+            // Convertir canvas a grid
+            const cellSize = 420 / GRID_SIZE_DRAW;
+            const grid = [];
+            for (let row = 0; row < GRID_SIZE_DRAW; row++) {
+                grid[row] = [];
+                for (let col = 0; col < GRID_SIZE_DRAW; col++) {
+                    const x = col * cellSize + cellSize / 2;
+                    const y = row * cellSize + cellSize / 2;
+                    const pixel = ctx.getImageData(x, y, 1, 1).data;
+                    const brightness = (pixel[0] + pixel[1] + pixel[2]) / 3;
+                    grid[row][col] = brightness < 128 ? 1 : 0;
+                }
+            }
+            mazeData.grid = grid;
+            mazeData.gridSize = GRID_SIZE_DRAW;
+            showScreen('settings-screen');
+        };
 
         document.getElementById('json-file-input').addEventListener('change', (e) => {
             const file = e.target.files[0]; if (!file) return;
@@ -534,37 +613,117 @@
             reader.readAsText(file);
         });
 
+        // 🔧 SISTEMA DE AUTO-REPARACIÓN DEL LABERINTO
+        function fixClosedSpaces(grid, startPos, goalPos, size) {
+            if (!grid || grid.length === 0) return { fixed: false, wallsBroken: 0 };
+            
+            const reachable = Array(size).fill(null).map(() => Array(size).fill(false));
+            const queue = [{x: startPos.x, y: startPos.y}];
+            reachable[startPos.y][startPos.x] = true;
+            
+            while (queue.length > 0) {
+                const {x, y} = queue.shift();
+                for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+                    const nx = x + dx, ny = y + dy;
+                    if (nx >= 0 && nx < size && ny >= 0 && ny < size 
+                        && !reachable[ny][nx] && grid[ny][nx] === 0) {
+                        reachable[ny][nx] = true;
+                        queue.push({x: nx, y: ny});
+                    }
+                }
+            }
+            
+            const unreachable = [];
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    if (grid[y][x] === 0 && !reachable[y][x]) unreachable.push({x, y});
+                }
+            }
+            
+            if (unreachable.length === 0) return { fixed: false, wallsBroken: 0 };
+            
+            let wallsBroken = 0;
+            
+            for (const startCell of unreachable) {
+                if (reachable[startCell.y][startCell.x]) continue;
+                
+                const visited = Array(size).fill(null).map(() => Array(size).fill(false));
+                const bfsQueue = [startCell];
+                visited[startCell.y][startCell.x] = true;
+                let found = false;
+                
+                while (bfsQueue.length > 0 && !found) {
+                    const curr = bfsQueue.shift();
+                    
+                    for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+                        const nx = curr.x + dx, ny = curr.y + dy;
+                        if (nx < 0 || nx >= size || ny < 0 || ny >= size || visited[ny][nx]) continue;
+                        
+                        if (grid[ny][nx] === 1) {
+                            for (const [dx2, dy2] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+                                const nnx = nx + dx2, nny = ny + dy2;
+                                if (nnx >= 0 && nnx < size && nny >= 0 && nny < size && reachable[nny][nnx]) {
+                                    grid[ny][nx] = 0;
+                                    reachable[ny][nx] = true;
+                                    wallsBroken++;
+                                    found = true;
+                                    
+                                    const newQueue = [{x: nx, y: ny}];
+                                    while (newQueue.length > 0) {
+                                        const c = newQueue.shift();
+                                        for (const [ddx, ddy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+                                            const mx = c.x + ddx, my = c.y + ddy;
+                                            if (mx >= 0 && mx < size && my >= 0 && my < size 
+                                                && !reachable[my][mx] && grid[my][mx] === 0) {
+                                                reachable[my][mx] = true;
+                                                newQueue.push({x: mx, y: my});
+                                            }
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                            if (found) break;
+                        } else {
+                            visited[ny][nx] = true;
+                            bfsQueue.push({x: nx, y: ny});
+                        }
+                    }
+                }
+            }
+            
+            return { fixed: wallsBroken > 0, wallsBroken };
+        }
+
         let scene, camera, renderer, playerAvatars = {}, joystick = null, gameCanvas;
 
-function start3DGame(mData, allPlayers) {
-    // 🔧 AUTO-REPARACIÓN: Conectar todo el laberinto antes de iniciar
-    const size = mData.gridSize || 21;
-    const startPos = mData.startPosition || {x: 1, y: 1};
-    const goalPos = mData.goal || {x: 19, y: 19};
-    
-    const repairResult = fixClosedSpaces(mData.grid, startPos, goalPos, size);
-    
-    if (repairResult.fixed) {
-        console.log(`🔧 Se rompieron ${repairResult.wallsBroken} paredes para conectar el laberinto`);
-        // Actualizar Firebase para que los jugadores que se unan después también tengan el laberinto corregido
-        update(ref(db, `rooms/${roomId}/mazeData/grid`), mData.grid);
-    }
-    
-    gameStarted = true;
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById('game-container').style.display = 'block';
-    document.getElementById('game-room-badge').textContent = `Sala: ${roomId}`;
-    
-    const myData = allPlayers[playerId];
-    localPlayer.x = myData.startX !== undefined ? myData.startX : 1;
-    localPlayer.z = myData.startZ !== undefined ? myData.startZ : 1;
-    localPlayer.startX = localPlayer.x;
-    localPlayer.startZ = localPlayer.z;
-    localPlayer.hasStick = myData.hasStick || false;
-    initThreeJS(mData, allPlayers);
-    animate();
-}
-
+        function start3DGame(mData, allPlayers) {
+            // 🔧 AUTO-REPARACIÓN: Conectar todo el laberinto antes de iniciar
+            const size = mData.gridSize || 21;
+            const startPos = mData.startPosition || {x: 1, y: 1};
+            const goalPos = mData.goal || {x: 19, y: 19};
+            
+            const repairResult = fixClosedSpaces(mData.grid, startPos, goalPos, size);
+            
+            if (repairResult.fixed) {
+                console.log(`🔧 Se rompieron ${repairResult.wallsBroken} paredes para conectar el laberinto`);
+                update(ref(db, `rooms/${roomId}/mazeData/grid`), mData.grid);
+            }
+            
+            gameStarted = true;
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('game-container').style.display = 'block';
+            document.getElementById('game-room-badge').textContent = `Sala: ${roomId}`;
+            
+            const myData = allPlayers[playerId];
+            localPlayer.x = myData.startX !== undefined ? myData.startX : 1;
+            localPlayer.z = myData.startZ !== undefined ? myData.startZ : 1;
+            localPlayer.startX = localPlayer.x;
+            localPlayer.startZ = localPlayer.z;
+            localPlayer.hasStick = myData.hasStick || false;
+            initThreeJS(mData, allPlayers);
+            animate();
+        }
 
         function initThreeJS(mData, allPlayers) {
             const gc = document.getElementById('game-container');
@@ -697,103 +856,11 @@ function start3DGame(mData, allPlayers) {
             });
         }
 
-        // 🔧 SISTEMA DE AUTO-REPARACIÓN DEL LABERINTO
-        // Detecta espacios vacíos aislados y rompe las paredes que los separan del camino principal
-        function fixClosedSpaces(grid, startPos, goalPos, size) {
-            if (!grid || grid.length === 0) return { fixed: false, wallsBroken: 0 };
-            
-            // Paso 1: BFS desde la posición de inicio para marcar todas las celdas alcanzables
-            const reachable = Array(size).fill(null).map(() => Array(size).fill(false));
-            const queue = [{x: startPos.x, y: startPos.y}];
-            reachable[startPos.y][startPos.x] = true;
-            
-            while (queue.length > 0) {
-                const {x, y} = queue.shift();
-                for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
-                    const nx = x + dx, ny = y + dy;
-                    if (nx >= 0 && nx < size && ny >= 0 && ny < size 
-                        && !reachable[ny][nx] && grid[ny][nx] === 0) {
-                        reachable[ny][nx] = true;
-                        queue.push({x: nx, y: ny});
-                    }
-                }
-            }
-            
-            // Paso 2: Encontrar todas las celdas vacías NO alcanzables (islas aisladas)
-            const unreachable = [];
-            for (let y = 0; y < size; y++) {
-                for (let x = 0; x < size; x++) {
-                    if (grid[y][x] === 0 && !reachable[y][x]) unreachable.push({x, y});
-                }
-            }
-            
-            if (unreachable.length === 0) return { fixed: false, wallsBroken: 0 };
-            
-            // Paso 3: Para cada isla aislada, encontrar la pared más cercana al camino principal y romperla
-            let wallsBroken = 0;
-            
-            for (const startCell of unreachable) {
-                if (reachable[startCell.y][startCell.x]) continue; // Ya fue conectada
-                
-                // BFS desde la isla para encontrar la pared más cercana al camino principal
-                const visited = Array(size).fill(null).map(() => Array(size).fill(false));
-                const bfsQueue = [startCell];
-                visited[startCell.y][startCell.x] = true;
-                let found = false;
-                
-                while (bfsQueue.length > 0 && !found) {
-                    const curr = bfsQueue.shift();
-                    
-                    for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
-                        const nx = curr.x + dx, ny = curr.y + dy;
-                        if (nx < 0 || nx >= size || ny < 0 || ny >= size || visited[ny][nx]) continue;
-                        
-                        if (grid[ny][nx] === 1) {
-                            // Encontramos una pared. ¿Hay un camino alcanzable al otro lado?
-                            for (const [dx2, dy2] of [[0,1],[0,-1],[1,0],[-1,0]]) {
-                                const nnx = nx + dx2, nny = ny + dy2;
-                                if (nnx >= 0 && nnx < size && nny >= 0 && nny < size && reachable[nny][nnx]) {
-                                    // ¡Sí! Rompemos esta pared
-                                    grid[ny][nx] = 0;
-                                    reachable[ny][nx] = true;
-                                    wallsBroken++;
-                                    found = true;
-                                    
-                                    // Marcar toda la isla como alcanzable
-                                    const newQueue = [{x: nx, y: ny}];
-                                    while (newQueue.length > 0) {
-                                        const c = newQueue.shift();
-                                        for (const [ddx, ddy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
-                                            const mx = c.x + ddx, my = c.y + ddy;
-                                            if (mx >= 0 && mx < size && my >= 0 && my < size 
-                                                && !reachable[my][mx] && grid[my][mx] === 0) {
-                                                reachable[my][mx] = true;
-                                                newQueue.push({x: mx, y: my});
-                                            }
-                                        }
-                                    }
-                                    break;
-                                }
-                            }
-                            if (found) break;
-                        } else {
-                            visited[ny][nx] = true;
-                            bfsQueue.push({x: nx, y: ny});
-                        }
-                    }
-                }
-            }
-            
-            return { fixed: wallsBroken > 0, wallsBroken };
-        }
-
-        
         window.toggleMap = () => {
             mapVisible = !mapVisible;
             document.getElementById('minimap').style.display = mapVisible ? 'block' : 'none';
         };
 
-        // 🗺️ FUNCIÓN DEL MINIMAPA (REACTIVADA)
         function drawMinimap(grid, size) {
             if (!mapVisible || !grid) return;
             const minimapCanvas = document.getElementById('minimap');
@@ -883,8 +950,7 @@ function start3DGame(mData, allPlayers) {
                 isMoving = true;
             }
             
-            // 🧱 SISTEMA DE COLISIONES ROBUSTO (Evita atravesar paredes)
-            const r = 0.35; // Radio del jugador para colisiones
+            const r = 0.35;
             const size = mazeData.gridSize;
             const grid = mazeData.grid;
             
@@ -892,7 +958,6 @@ function start3DGame(mData, allPlayers) {
                 let nextX = localPlayer.x + mx;
                 let nextZ = localPlayer.z + mz;
                 
-                // Comprobar movimiento en X
                 let canMoveX = true;
                 const checkX = Math.floor(nextX + (mx > 0 ? r : -r));
                 const checkZ1_x = Math.floor(localPlayer.z - r);
@@ -906,7 +971,6 @@ function start3DGame(mData, allPlayers) {
                 }
                 if (canMoveX) localPlayer.x = nextX;
                 
-                // Comprobar movimiento en Z
                 let canMoveZ = true;
                 const checkZ = Math.floor(nextZ + (mz > 0 ? r : -r));
                 const checkX1_z = Math.floor(localPlayer.x - r);
@@ -956,7 +1020,6 @@ function start3DGame(mData, allPlayers) {
                 });
             });
             
-            // 🗺️ ACTUALIZAR MINIMAPA EN CADA FRAME
             drawMinimap(mazeData.grid, mazeData.gridSize);
             
             if (mazeData.goal && Math.sqrt((localPlayer.x - mazeData.goal.x)**2 + (localPlayer.z - mazeData.goal.y)**2) < 0.6) {
