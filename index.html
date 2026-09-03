@@ -729,8 +729,8 @@ function setupWaitingRoom() {
             document.getElementById('game-room-badge').textContent = `Sala: ${roomId}`;
             
             const myData = allPlayers[playerId];
-            localPlayer.x = myData.startX !== undefined ? myData.startX 0.5 : 1.5;
-            localPlayer.z = myData.startZ !== undefined ? myData.startZ 0.5 : 1.5;
+            localPlayer.x = myData.startX !== undefined ? myData.startX + 0.5 : 1.5;
+            localPlayer.z = myData.startZ !== undefined ? myData.startZ + 0.5 : 1.5;
             localPlayer.startX = localPlayer.x;
             localPlayer.startZ = localPlayer.z;
             localPlayer.hasStick = myData.hasStick || false;
