@@ -317,20 +317,6 @@
             }
         };
 
-        window.recoverMaze = async () => {
-            const code = document.getElementById('continue-code-input').value.trim().toUpperCase();
-            if (!code) return alert("Por favor, ingresa un código.");
-            const snap = await get(ref(db, `rooms/${code}`));
-            if (snap.exists() && snap.val().creatorId === playerId) {
-                roomId = code;
-                mazeData = snap.val().mazeData || mazeData;
-                document.getElementById('settings-room-code').textContent = roomId;
-                showScreen('settings-screen');
-            } else {
-                alert("No encontramos un laberinto con ese código. Verifica que lo hayas generado recientemente.");
-            }
-        };
-
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('returning') === 'true' && urlParams.get('room')) {
             roomId = urlParams.get('room');
