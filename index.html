@@ -973,7 +973,7 @@ function setupWaitingRoom() {
                 isMoving = true;
             }
             
-            const r = 0.2;
+            const r = 0.25; // Radio ideal: deja 0.25 de margen a cada lado en un pasillo de 1 unidad
             const size = mazeData.gridSize;
             const grid = mazeData.grid;
             
@@ -981,35 +981,47 @@ function setupWaitingRoom() {
                 let nextX = localPlayer.x + mx;
                 let nextZ = localPlayer.z + mz;
                 
+                // --- COLISIÓN ROBUSTA EN EJE X ---
                 let canMoveX = true;
-                const checkX = Math.floor(nextX + (mx > 0 ? r : -r));
-                const checkZ1_x = Math.floor(localPlayer.z - r);
-                const checkZ2_x = Math.floor(localPlayer.z + r);
+                // El +0.01 y -0.01 evitan errores de redondeo justo en el borde de la pared
+                const minX = Math.floor(nextX - r + 0.01);
+                const maxX = Math.floor(nextX + r - 0.01);
+                const minZ_X = Math.floor(localPlayer.z - r + 0.01);
+                const maxZ_X = Math.floor(localPlayer.z + r - 0.01);
                 
-                if (checkX < 0 || checkX >= size || checkZ1_x < 0 || checkZ1_x >= size || checkZ2_x < 0 || checkZ2_x >= size) {
-                    canMoveX = false;
-                } else {
-                    if (grid[checkZ1_x] && grid[checkZ1_x][checkX] === 1) canMoveX = false;
-                    if (grid[checkZ2_x] && grid[checkZ2_x][checkX] === 1) canMoveX = false;
+                for (let x = minX; x <= maxX; x++) {
+                    for (let z = minZ_X; z <= maxZ_X; z++) {
+                        if (x < 0 || x >= size || z < 0 || z >= size || grid[z][x] === 1) {
+                            canMoveX = false;
+                            break;
+                        }
+                    }
+                    if (!canMoveX) break;
                 }
                 if (canMoveX) localPlayer.x = nextX;
                 
+                // --- COLISIÓN ROBUSTA EN EJE Z ---
                 let canMoveZ = true;
-                const checkZ = Math.floor(nextZ + (mz > 0 ? r : -r));
-                const checkX1_z = Math.floor(localPlayer.x - r);
-                const checkX2_z = Math.floor(localPlayer.x + r);
+                const minZ = Math.floor(nextZ - r + 0.01);
+                const maxZ = Math.floor(nextZ + r - 0.01);
+                const minX_Z = Math.floor(localPlayer.x - r + 0.01);
+                const maxX_Z = Math.floor(localPlayer.x + r - 0.01);
                 
-                if (checkZ < 0 || checkZ >= size || checkX1_z < 0 || checkX1_z >= size || checkX2_z < 0 || checkX2_z >= size) {
-                    canMoveZ = false;
-                } else {
-                    if (grid[checkZ] && grid[checkZ][checkX1_z] === 1) canMoveZ = false;
-                    if (grid[checkZ] && grid[checkZ][checkX2_z] === 1) canMoveZ = false;
+                for (let z = minZ; z <= maxZ; z++) {
+                    for (let x = minX_Z; x <= maxX_Z; x++) {
+                        if (x < 0 || x >= size || z < 0 || z >= size || grid[z][x] === 1) {
+                            canMoveZ = false;
+                            break;
+                        }
+                    }
+                    if (!canMoveZ) break;
                 }
                 if (canMoveZ) localPlayer.z = nextZ;
             } else {
                 localPlayer.x += mx;
                 localPlayer.z += mz;
             }
+
             
             camera.position.set(localPlayer.x, 1.5, localPlayer.z);
             camera.rotation.order = 'YXZ';
