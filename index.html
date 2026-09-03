@@ -78,7 +78,6 @@
         <h1>🎨 Labyrinth Lab</h1>
         <p class="subtitle">Crea, comparte y juega en tiempo real</p>
         
-        <!-- PANTALLA 1: INICIO -->
         <div id="lobby-screen" class="screen active">
             <div class="card">
                 <h2>👋 ¡Hola! ¿Qué quieres hacer hoy?</h2>
@@ -95,7 +94,6 @@
             </div>
         </div>
 
-        <!-- PANTALLA 1B: UNIRSE -->
         <div id="join-screen" class="screen">
             <div class="card">
                 <h2>🚪 Unirse a una aventura</h2>
@@ -106,7 +104,6 @@
             </div>
         </div>
 
-        <!-- PANTALLA 2: MODO DE CREACIÓN (Solo para el creador) -->
         <div id="creator-mode-screen" class="screen">
             <div class="card">
                 <h2>🛠️ ¿Cómo quieres crear tu laberinto?</h2>
@@ -132,7 +129,6 @@
             </div>
         </div>
 
-        <!-- PANTALLA 2B: CONTINUAR PROCESO -->
         <div id="continue-process-screen" class="screen">
             <div class="card">
                 <h2>🔄 Recuperar laberinto</h2>
@@ -143,7 +139,6 @@
             </div>
         </div>
 
-        <!-- PANTALLA 2C: ESPERA DEL VECTORIZADOR -->
         <div id="vectorizer-wait-screen" class="screen">
             <div class="card">
                 <h2>📷 Digitalizando tu laberinto...</h2>
@@ -154,7 +149,6 @@
             </div>
         </div>
 
-        <!-- PANTALLA 2D: SUBIR JSON -->
         <div id="json-upload-screen" class="screen">
             <div class="card">
                 <h2>📂 Cargar archivo JSON</h2>
@@ -165,11 +159,9 @@
             </div>
         </div>
 
-        <!-- PANTALLA 3: CONFIGURACIÓN DEL LABERINTO -->
         <div id="settings-screen" class="screen">
             <div class="card">
                 <h2>⚙️ Personaliza tu aventura</h2>
-                
                 <div class="settings">
                     <div class="setting-row">
                         <label>👥 ¿Cuántos jugadores participarán? (incluyéndote)</label>
@@ -181,7 +173,6 @@
                             <option value="5">5 jugadores (yo + 4 invitados)</option>
                         </select>
                     </div>
-                    
                     <div class="setting-row">
                         <label>🎯 Modo de juego</label>
                         <select id="game-mode-select">
@@ -190,7 +181,6 @@
                             <option value="lleva">🏃 La lleva (Aleatorio): Un jugador al azar tendrá el stick, saldrá cerca de la meta y será el único que pueda tocar a los demás.</option>
                         </select>
                     </div>
-
                     <div class="setting-row"><label>📏 Altura de paredes: <span id="height-val">2.0m</span></label><input type="range" id="height-slider" min="1.0" max="4.0" step="0.5" value="2.0"></div>
                     <div class="setting-row"><label>🧱 Material de paredes:</label>
                         <select id="material-select">
@@ -220,7 +210,6 @@
             </div>
         </div>
 
-        <!-- PANTALLA 4: SALA DE ESPERA (Unificada para todos) -->
         <div id="waiting-screen" class="screen">
             <div class="card">
                 <h2>🚪 Sala de Espera</h2>
@@ -246,7 +235,6 @@
             </div>
         </div>
 
-        <!-- PANTALLA 5: EDITOR DE DIBUJO (Solo si elige dibujar) -->
         <div id="game-screen" class="screen">
             <div class="card">
                 <h2>🖌️ Dibuja tu Laberinto</h2>
@@ -259,11 +247,10 @@
                 <canvas id="draw-canvas" width="420" height="420"></canvas>
                 <button class="btn" style="margin-top: 15px;" onclick="goToSettingsFromDraw()">✅ Terminar dibujo y Configurar</button>
                 <button class="btn btn-back" onclick="showScreen('creator-mode-screen')">← Cancelar</button>
-            </div</div>
+            </div>
         </div>
     </div>
     
-    <!-- CONTENEDOR 3D -->
     <div id="game-container">
         <div class="room-badge" id="game-room-badge">Sala: ---</div>
         <button class="game-btn" style="top:10px; right:10px;" onclick="location.reload()">✖️ Salir</button>
@@ -323,7 +310,6 @@
             window.scrollTo(0, 0);
         };
 
-        // --- FLUJO DEL CREADOR ---
         window.startAsHost = () => {
             roomId = "LAB-" + Math.random().toString(36).substr(2, 4).toUpperCase();
             isHost = true;
@@ -349,7 +335,6 @@
         window.recoverMaze = async () => {
             const code = document.getElementById('continue-code-input').value.trim().toUpperCase();
             if (!code) return alert("Por favor, ingresa un código.");
-            
             const snap = await get(ref(db, `rooms/${code}`));
             if (snap.exists() && snap.val().creatorId === playerId) {
                 roomId = code;
@@ -361,7 +346,6 @@
             }
         };
 
-        // Retorno automático desde el vectorizador
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('returning') === 'true' && urlParams.get('room')) {
             roomId = urlParams.get('room');
@@ -378,20 +362,16 @@
             }, 1000);
         }
 
-        // --- FLUJO DEL JUGADOR ---
         window.joinRoom = async () => {
             const code = document.getElementById('join-code-input').value.trim().toUpperCase();
             if (!code) return alert("Ingresa un código.");
-            
             const snap = await get(ref(db, `rooms/${code}`));
             if (!snap.exists()) return alert("❌ Esa sala no existe. Verifica el código.");
-            
             const data = snap.val();
             const currentPlayers = Object.keys(data.players || {}).length;
             if (currentPlayers >= data.maxPlayers) {
                 return alert("❌ La sala está llena. Pídele al creador que abra una nueva.");
             }
-
             roomId = code;
             isHost = false;
             mazeData = data.mazeData || mazeData;
@@ -400,12 +380,7 @@
             setupWaitingRoom();
         };
 
-        // --- CONFIGURACIÓN Y SALA DE ESPERA ---
-        window.goToSettingsFromDraw = () => {
-            // Aquí se procesaría el canvas a grid en una implementación completa
-            showScreen('settings-screen');
-        };
-
+        window.goToSettingsFromDraw = () => showScreen('settings-screen');
         window.goToSettingsFromJson = () => showScreen('settings-screen');
 
         window.enterWaitingRoom = async () => {
@@ -415,7 +390,6 @@
                 floor: document.getElementById('floor-select').value,
                 ambient: parseInt(document.getElementById('ambient-slider').value) / 100
             };
-
             await set(ref(db, `rooms/${roomId}`), {
                 creatorId: playerId,
                 mazeData: mazeData,
@@ -424,7 +398,6 @@
                 gameStarted: false,
                 players: { [playerId]: { color: myColor, ready: false, hasStick: false } }
             });
-
             showScreen('waiting-screen');
             setupWaitingRoom();
         };
@@ -447,14 +420,11 @@
             onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
                 const data = snapshot.val();
                 if (!data) return;
-                
                 players = data.players || {};
                 const maxP = data.maxPlayers || 1;
-                
                 const list = document.getElementById('player-list');
                 list.innerHTML = '';
                 let readyCount = 0;
-                
                 Object.entries(players).forEach(([pid, p]) => {
                     if (p.ready) readyCount++;
                     const div = document.createElement('div');
@@ -462,19 +432,15 @@
                     div.innerHTML = `<span style="color:${p.color || '#fff'}">● Jugador</span> <span>${p.ready ? '✅ Listo' : '⏳ Esperando'}</span>`;
                     list.appendChild(div);
                 });
-
                 document.getElementById('ready-status-text').textContent = `Jugadores listos: ${readyCount} / ${maxP}`;
 
-                // 🌟 INICIO AUTOMÁTICO CUANDO TODOS ESTÁN LISTOS
                 if (readyCount >= maxP && !data.gameStarted) {
                     assignRolesAndStart(data);
                 }
-
                 if (data.gameStarted && !gameStarted) {
                     start3DGame(data.mazeData, players);
                 }
             });
-
             updatePlayerData();
             onDisconnect(ref(db, `rooms/${roomId}/players/${playerId}`)).remove();
         }
@@ -483,17 +449,13 @@
             const playerIds = Object.keys(data.players);
             const mode = data.gameMode || 'normal';
             const updates = {};
-
             if (mode === 'lleva' && playerIds.length > 0) {
-                // Elegir al azar quién la lleva
                 const randomIdx = Math.floor(Math.random() * playerIds.length);
                 const stickHolder = playerIds[randomIdx];
                 const goal = data.mazeData.goal || {x: 19, y: 19};
-
-                playerIds.forEach((pid, idx) => {
+                playerIds.forEach((pid) => {
                     updates[`players/${pid}/hasStick`] = (pid === stickHolder);
                     if (pid === stickHolder) {
-                        // Poner al que la lleva cerca de la meta
                         updates[`players/${pid}/startX`] = Math.max(1, goal.x - 2);
                         updates[`players/${pid}/startZ`] = Math.max(1, goal.y - 2);
                     } else {
@@ -505,11 +467,7 @@
             } else if (mode === 'todos') {
                 playerIds.forEach(pid => { updates[`players/${pid}/hasStick`] = true; });
             }
-
-            if (Object.keys(updates).length > 0) {
-                await update(ref(db, `rooms/${roomId}`), updates);
-            }
-            
+            if (Object.keys(updates).length > 0) await update(ref(db, `rooms/${roomId}`), updates);
             await update(ref(db, `rooms/${roomId}`), { gameStarted: true });
         }
 
@@ -535,7 +493,6 @@
             location.reload();
         };
 
-        // --- EDITOR DE DIBUJO ---
         let isDrawing = false, drawColor = 'black';
         const canvas = document.getElementById('draw-canvas');
         const ctx = canvas.getContext('2d');
@@ -558,7 +515,6 @@
             ctx.fillStyle = drawColor; ctx.beginPath(); ctx.arc(x, y, 10, 0, Math.PI*2); ctx.fill();
         }
 
-        // --- JSON UPLOAD ---
         document.getElementById('json-file-input').addEventListener('change', (e) => {
             const file = e.target.files[0]; if (!file) return;
             const reader = new FileReader();
@@ -571,14 +527,13 @@
                     document.getElementById('json-load-status').style.color = "#4CAF50";
                     document.getElementById('btn-continue-json').disabled = false;
                 } catch (err) {
-                    document.getElementById('json-load-status').textContent = "❌ Archivo inválido. Asegúrate de que sea un JSON del generador.";
+                    document.getElementById('json-load-status').textContent = "❌ Archivo inválido.";
                     document.getElementById('json-load-status').style.color = "#ff4444";
                 }
             };
             reader.readAsText(file);
         });
 
-        // --- MOTOR 3D (THREE.JS) ---
         let scene, camera, renderer, playerAvatars = {}, joystick = null, gameCanvas;
 
         function start3DGame(mData, allPlayers) {
@@ -586,14 +541,12 @@
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('game-container').style.display = 'block';
             document.getElementById('game-room-badge').textContent = `Sala: ${roomId}`;
-            
             const myData = allPlayers[playerId];
             localPlayer.x = myData.startX !== undefined ? myData.startX : 1;
             localPlayer.z = myData.startZ !== undefined ? myData.startZ : 1;
             localPlayer.startX = localPlayer.x;
             localPlayer.startZ = localPlayer.z;
             localPlayer.hasStick = myData.hasStick || false;
-
             initThreeJS(mData, allPlayers);
             animate();
         }
@@ -603,22 +556,18 @@
             gameCanvas = document.createElement('canvas');
             gameCanvas.style.cssText = 'width:100%;height:100%;display:block;';
             gc.appendChild(gameCanvas);
-            
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x2a2a4e);
             scene.fog = new THREE.Fog(0x2a2a4e, 10, 60);
-            
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
             renderer = new THREE.WebGLRenderer({ canvas: gameCanvas, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            
             scene.add(new THREE.AmbientLight(0xaaaaaa, mData.settings.ambient || 1.0));
             const pLight = new THREE.PointLight(0xffffcc, 5.0, 50);
             pLight.position.set(0, 1.5, 0);
             scene.add(pLight);
             window._playerLight = pLight;
 
-            // Texturas procedurales mejoradas
             const texCanvas = document.createElement('canvas');
             texCanvas.width = 256; texCanvas.height = 256;
             const tCtx = texCanvas.getContext('2d');
@@ -626,7 +575,6 @@
             const colors = { stone:'#6b6b6b', brick:'#8b4513', wood:'#6b4423', metal:'#888', crystal:'#2a4d8f', moss:'#5a5a4a', lava:'#2a1a1a', snow:'#e8f0ff' };
             tCtx.fillStyle = colors[mat] || '#666';
             tCtx.fillRect(0,0,256,256);
-            
             if (mat === 'brick') {
                 for(let r=0; r<8; r++) for(let c=-1; c<5; c++) {
                     tCtx.fillStyle = `rgb(${150+Math.random()*50}, ${80+Math.random()*40}, ${50+Math.random()*30})`;
@@ -643,7 +591,6 @@
                     tCtx.beginPath(); tCtx.arc(Math.random()*256, Math.random()*256, 5+Math.random()*15, 0, Math.PI*2); tCtx.fill();
                 }
             }
-            
             const wallTex = new THREE.CanvasTexture(texCanvas);
             wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping;
             wallTex.repeat.set(2, 2);
@@ -684,13 +631,11 @@
                 const body = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.0, 16), new THREE.MeshStandardMaterial({ color: p.color }));
                 body.position.y = 0.5; body.rotation.x = Math.PI;
                 grp.add(head, body);
-                
                 if (p.hasStick) {
                     const stick = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.2, 8), new THREE.MeshStandardMaterial({ color: p.color, emissive: p.color, emissiveIntensity: 0.8 }));
                     stick.position.set(0.4, 0.8, 0.4); stick.rotation.z = -0.3;
                     grp.add(stick);
                 }
-                
                 grp.position.set(p.startX !== undefined ? p.startX : 1, 0, p.startZ !== undefined ? p.startZ : 1);
                 scene.add(grp);
                 playerAvatars[pid] = grp;
@@ -742,6 +687,58 @@
             document.getElementById('minimap').style.display = mapVisible ? 'block' : 'none';
         };
 
+        // 🗺️ FUNCIÓN DEL MINIMAPA (REACTIVADA)
+        function drawMinimap(grid, size) {
+            if (!mapVisible || !grid) return;
+            const minimapCanvas = document.getElementById('minimap');
+            const mctx = minimapCanvas.getContext('2d');
+            const mapSize = 150;
+            const cellPx = mapSize / size;
+            
+            mctx.fillStyle = '#111';
+            mctx.fillRect(0, 0, mapSize, mapSize);
+            
+            mctx.fillStyle = '#666';
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    if (grid[y] && grid[y][x] === 1) {
+                        mctx.fillRect(x * cellPx, y * cellPx, cellPx, cellPx);
+                    }
+                }
+            }
+            
+            if (mazeData.goal) {
+                mctx.fillStyle = '#0f0';
+                mctx.beginPath();
+                mctx.arc(mazeData.goal.x * cellPx + cellPx/2, mazeData.goal.y * cellPx + cellPx/2, cellPx * 0.6, 0, Math.PI * 2);
+                mctx.fill();
+            }
+            
+            Object.entries(players).forEach(([pid, p]) => {
+                const px = pid === playerId ? localPlayer.x : (p.x !== undefined ? p.x : p.startX);
+                const pz = pid === playerId ? localPlayer.z : (p.z !== undefined ? p.z : p.startZ);
+                
+                mctx.fillStyle = p.color || '#ffffff';
+                mctx.beginPath();
+                mctx.arc(px * cellPx + cellPx/2, pz * cellPx + cellPx/2, cellPx * 0.5, 0, Math.PI * 2);
+                mctx.fill();
+                mctx.strokeStyle = 'white';
+                mctx.lineWidth = 1;
+                mctx.stroke();
+                
+                if (pid === playerId) {
+                    const dirX = Math.sin(localPlayer.yaw);
+                    const dirZ = Math.cos(localPlayer.yaw);
+                    mctx.strokeStyle = 'yellow';
+                    mctx.lineWidth = 2;
+                    mctx.beginPath();
+                    mctx.moveTo(px * cellPx + cellPx/2, pz * cellPx + cellPx/2);
+                    mctx.lineTo((px - dirX * 0.8) * cellPx + cellPx/2, (pz - dirZ * 0.8) * cellPx + cellPx/2);
+                    mctx.stroke();
+                }
+            });
+        }
+
         let startTime = performance.now();
         function animate() {
             requestAnimationFrame(animate);
@@ -780,8 +777,46 @@
                 isMoving = true;
             }
             
-            localPlayer.x += mx;
-            localPlayer.z += mz;
+            // 🧱 SISTEMA DE COLISIONES ROBUSTO (Evita atravesar paredes)
+            const r = 0.35; // Radio del jugador para colisiones
+            const size = mazeData.gridSize;
+            const grid = mazeData.grid;
+            
+            if (grid && grid.length > 0) {
+                let nextX = localPlayer.x + mx;
+                let nextZ = localPlayer.z + mz;
+                
+                // Comprobar movimiento en X
+                let canMoveX = true;
+                const checkX = Math.floor(nextX + (mx > 0 ? r : -r));
+                const checkZ1_x = Math.floor(localPlayer.z - r);
+                const checkZ2_x = Math.floor(localPlayer.z + r);
+                
+                if (checkX < 0 || checkX >= size || checkZ1_x < 0 || checkZ1_x >= size || checkZ2_x < 0 || checkZ2_x >= size) {
+                    canMoveX = false;
+                } else {
+                    if (grid[checkZ1_x] && grid[checkZ1_x][checkX] === 1) canMoveX = false;
+                    if (grid[checkZ2_x] && grid[checkZ2_x][checkX] === 1) canMoveX = false;
+                }
+                if (canMoveX) localPlayer.x = nextX;
+                
+                // Comprobar movimiento en Z
+                let canMoveZ = true;
+                const checkZ = Math.floor(nextZ + (mz > 0 ? r : -r));
+                const checkX1_z = Math.floor(localPlayer.x - r);
+                const checkX2_z = Math.floor(localPlayer.x + r);
+                
+                if (checkZ < 0 || checkZ >= size || checkX1_z < 0 || checkX1_z >= size || checkX2_z < 0 || checkX2_z >= size) {
+                    canMoveZ = false;
+                } else {
+                    if (grid[checkZ] && grid[checkZ][checkX1_z] === 1) canMoveZ = false;
+                    if (grid[checkZ] && grid[checkZ][checkX2_z] === 1) canMoveZ = false;
+                }
+                if (canMoveZ) localPlayer.z = nextZ;
+            } else {
+                localPlayer.x += mx;
+                localPlayer.z += mz;
+            }
             
             camera.position.set(localPlayer.x, 1.5, localPlayer.z);
             camera.rotation.order = 'YXZ';
@@ -810,15 +845,18 @@
                 players = snapshot.val() || {};
                 Object.entries(players).forEach(([pid, p]) => {
                     if (playerAvatars[pid]) {
-                        playerAvatars[pid].position.set(p.x || 0, 0, p.z || 0);
+                        playerAvatars[pid].position.set(p.x !== undefined ? p.x : p.startX, 0, p.z !== undefined ? p.z : p.startZ);
                     }
                 });
             });
             
-            // Victoria simple (cerca de 19,19 para demo)
-            if (Math.sqrt((localPlayer.x - 19)**2 + (localPlayer.z - 9)**2) < 1.5) { // Ajusta según tu meta real
-                // gameWon = true;
-                // document.getElementById('victory-overlay').style.display = 'flex';
+            // 🗺️ ACTUALIZAR MINIMAPA EN CADA FRAME
+            drawMinimap(mazeData.grid, mazeData.gridSize);
+            
+            if (mazeData.goal && Math.sqrt((localPlayer.x - mazeData.goal.x)**2 + (localPlayer.z - mazeData.goal.y)**2) < 0.6) {
+                gameWon = true;
+                document.getElementById('final-time').textContent = `Tiempo: ${Math.floor(elapsed/60).toString().padStart(2,'0')}:${Math.floor(elapsed%60).toString().padStart(2,'0')}`;
+                document.getElementById('victory-overlay').style.display = 'flex';
             }
             
             renderer.render(scene, camera);
