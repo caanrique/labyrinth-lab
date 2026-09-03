@@ -396,9 +396,15 @@
         }
         
         function goBackFromSettings() {
-            if (gameMode === 'draw') { showScreen('game-screen'); redrawCanvas(); } 
-            else { goToModeScreen(); }
+            if (isHost && gameMode === 'draw') { 
+                showScreen('game-screen'); 
+                redrawCanvas(); 
+            } else { 
+                // Si es invitado, o anfitrión que viene de vectorizar/json, vuelve al inicio
+                location.reload(); 
+            }
         }
+
         
         window.leaveRoom = async () => {
             if (roomId && db) { try { await remove(ref(db, `rooms/${roomId}/players/${playerId}`)); } catch (e) { console.error(e); } }
