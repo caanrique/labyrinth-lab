@@ -723,6 +723,99 @@
             }
         };
 
+        // 3. FUNCIÓN PARA CUANDO EL ANFITRIÓN REGRESA DEL VECTORIZADOR
+        window.returnAsHost = async (roomCode) => {
+            initAudio();
+            if (!db) { alert("Firebase no se inicializó."); return; }
+            
+            roomId = roomCode;
+            isHost = true; // Forzamos que sea anfitrión
+            
+            document.getElementById('lobby-status').textContent = "Recuperando tu laberinto...";
+            
+            try {
+                const roomRef = ref(db, `rooms/${roomId}`);
+                const snapshot = await get(roomRef);
+                
+                if (!snapshot.exists()) {
+                    alert("❌ La sala ya no existe.");
+                    location.reload();
+                    return;
+                }
+                
+                const existingData = snapshot.val();
+                
+                // Verificar que este jugador es realmente el host
+                if (existingData.host !== playerId) {
+                    alert("❌ No eres el anfitrión de esta sala.");
+                    location.reload();
+                    return;
+                }
+                
+                // Cargar datos del laberinto
+                if (existingData.gridSize) { 
+                    GRID_SIZE = existingData.gridSize; 
+                    CELL_PX = Math.floor(420 / GRID_SIZE); 
+                }
+                grid = ensureGrid2D(existingData.grid, GRID_SIZE);
+                goal = existingData.goal;
+                startPosition = existingData.startPosition;
+                
+                // Actualizar el jugador en Firebase
+                await update(ref(db, `rooms/${roomId}/players/${playerId}`), { 
+                    color: myColor, 
+                    x: 0, z: 0, 
+                    startX: 0, startZ: 0, 
+                    hasStick: true, 
+                    ready: false 
+                });
+                onDisconnect(ref(db, `rooms/${roomId}/players/${playerId}`)).remove();
+                
+                updateRoomTexts();
+                
+                // Limpiar la URL para que no se vea fea
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // Ir directo a configuración
+                showScreen('settings-screen');
+                setupHostSettingsUI();
+                listenToRoom();
+                
+                isReturningFromVectorizer = false;
+
+            } catch (error) {
+                console.error("❌ Error:", error);
+                alert("ERROR: " + error.message);
+                location.reload();
+            }
+        };
+
+        // Función especial para configurar la pantalla del anfitrión después de vectorizar
+        function setupHostSettingsUI() {
+            // Mostrar cosas de anfitrión
+            document.querySelector('.battle-checkbox').style.display = 'flex';
+            document.getElementById('btn-host-ready').style.display = 'block';
+            document.getElementById('btn-generate').style.display = 'block';
+            document.getElementById('settings-panel').style.display = 'block';
+            
+            // Ocultar cosas de invitado
+            document.getElementById('btn-guest-ready').style.display = 'none';
+            
+            // Resetear color
+            colorSelectedInRoom = false;
+            document.querySelectorAll('#game-color-picker .color-btn').forEach(b => b.classList.remove('selected'));
+            const statusEl = document.getElementById('color-selection-status');
+            statusEl.textContent = '⚠️ Selecciona un color';
+            statusEl.style.color = '#ff6666';
+            
+            const savedColor = localStorage.getItem('ll_color');
+            if (savedColor) {
+                const savedBtn = document.querySelector(`#game-color-picker .color-btn[data-color="${savedColor}"]`);
+                if (savedBtn) savedBtn.click();
+            }
+        }
+
+        
         window.selectMode = (mode) => {
             gameMode = mode;
             if (mode === 'draw') {
