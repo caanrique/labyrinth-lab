@@ -346,13 +346,11 @@
         const urlParamsGame = new URLSearchParams(window.location.search);
         if (urlParamsGame.get('returning') === 'true' && urlParamsGame.get('room')) {
             isReturningFromVectorizer = true;
-            // Rellenar el código de sala automáticamente
-            document.getElementById('room-input').value = urlParamsGame.get('room');
-            // Unirse a la sala automáticamente después de medio segundo
             setTimeout(() => {
-                window.joinRoom();
+                window.returnAsHost(urlParamsGame.get('room'));
             }, 500);
         }
+
 
         let previousMazeData = null;
         
