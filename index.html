@@ -536,20 +536,35 @@
 
         let scene, camera, renderer, playerAvatars = {}, joystick = null, gameCanvas;
 
-        function start3DGame(mData, allPlayers) {
-            gameStarted = true;
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('game-container').style.display = 'block';
-            document.getElementById('game-room-badge').textContent = `Sala: ${roomId}`;
-            const myData = allPlayers[playerId];
-            localPlayer.x = myData.startX !== undefined ? myData.startX : 1;
-            localPlayer.z = myData.startZ !== undefined ? myData.startZ : 1;
-            localPlayer.startX = localPlayer.x;
-            localPlayer.startZ = localPlayer.z;
-            localPlayer.hasStick = myData.hasStick || false;
-            initThreeJS(mData, allPlayers);
-            animate();
-        }
+function start3DGame(mData, allPlayers) {
+    // 🔧 AUTO-REPARACIÓN: Conectar todo el laberinto antes de iniciar
+    const size = mData.gridSize || 21;
+    const startPos = mData.startPosition || {x: 1, y: 1};
+    const goalPos = mData.goal || {x: 19, y: 19};
+    
+    const repairResult = fixClosedSpaces(mData.grid, startPos, goalPos, size);
+    
+    if (repairResult.fixed) {
+        console.log(`🔧 Se rompieron ${repairResult.wallsBroken} paredes para conectar el laberinto`);
+        // Actualizar Firebase para que los jugadores que se unan después también tengan el laberinto corregido
+        update(ref(db, `rooms/${roomId}/mazeData/grid`), mData.grid);
+    }
+    
+    gameStarted = true;
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('game-container').style.display = 'block';
+    document.getElementById('game-room-badge').textContent = `Sala: ${roomId}`;
+    
+    const myData = allPlayers[playerId];
+    localPlayer.x = myData.startX !== undefined ? myData.startX : 1;
+    localPlayer.z = myData.startZ !== undefined ? myData.startZ : 1;
+    localPlayer.startX = localPlayer.x;
+    localPlayer.startZ = localPlayer.z;
+    localPlayer.hasStick = myData.hasStick || false;
+    initThreeJS(mData, allPlayers);
+    animate();
+}
+
 
         function initThreeJS(mData, allPlayers) {
             const gc = document.getElementById('game-container');
