@@ -383,24 +383,37 @@
 
         window.goToSettingsFromJson = () => showScreen('settings-screen');
 
-        window.enterWaitingRoom = async () => {
-            mazeData.settings = {
-                height: parseFloat(document.getElementById('height-slider').value),
-                material: document.getElementById('material-select').value,
-                floor: document.getElementById('floor-select').value,
-                ambient: parseInt(document.getElementById('ambient-slider').value) / 100
-            };
-            await set(ref(db, `rooms/${roomId}`), {
-                creatorId: playerId,
-                mazeData: mazeData,
-                maxPlayers: parseInt(document.getElementById('player-count-select').value),
-                gameMode: document.getElementById('game-mode-select').value,
-                gameStarted: false,
-                players: { [playerId]: { color: myColor, ready: false, hasStick: false } }
-            });
-            showScreen('waiting-screen');
-            setupWaitingRoom();
-        };
+window.enterWaitingRoom = async () => {
+    mazeData.settings = {
+        height: parseFloat(document.getElementById('height-slider').value),
+        material: document.getElementById('material-select').value,
+        floor: document.getElementById('floor-select').value,
+        ambient: parseInt(document.getElementById('ambient-slider').value) / 100
+    };
+
+    // 🔧 AUTO-REPARACIÓN: Conectar todo el laberinto antes de compartir
+    if (mazeData.grid && mazeData.grid.length > 0) {
+        const size = mazeData.gridSize || 21;
+        const startPos = mazeData.startPosition || {x: 1, y: 1};
+        const goalPos = mazeData.goal || {x: size - 2, y: size - 2};
+        const repairResult = fixClosedSpaces(mazeData.grid, startPos, goalPos, size);
+        if (repairResult.fixed) {
+            console.log(`🔧 Se rompieron ${repairResult.wallsBroken} paredes para conectar el laberinto`);
+        }
+    }
+
+    await set(ref(db, `rooms/${roomId}`), {
+        creatorId: playerId,
+        mazeData: mazeData,
+        maxPlayers: parseInt(document.getElementById('player-count-select').value),
+        gameMode: document.getElementById('game-mode-select').value,
+        gameStarted: false,
+        players: { [playerId]: { color: myColor, ready: false, hasStick: false } }
+    });
+    showScreen('waiting-screen');
+    setupWaitingRoom();
+};
+
 
         function setupWaitingRoom() {
             document.querySelectorAll('#waiting-color-picker .color-btn').forEach(btn => {
