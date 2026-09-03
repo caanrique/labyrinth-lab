@@ -116,26 +116,12 @@
                         📷 Digitalizar desde una foto
                         <small>Toma una foto a tu dibujo en papel y lo convertimos</small>
                     </button>
-                    <button class="mode-btn" onclick="selectCreatorMode('continue')">
-                        🔄 Continuar proceso iniciado
-                        <small>Ya digitalicé el laberinto, tengo el código</small>
-                    </button>
                     <button class="mode-btn" onclick="selectCreatorMode('json')">
                         📂 Subir archivo .json
                         <small>Usa un archivo que ya hayas generado antes</small>
                     </button>
                 </div>
                 <button class="btn btn-back" onclick="showScreen('lobby-screen')">← Volver al inicio</button>
-            </div>
-        </div>
-
-        <div id="continue-process-screen" class="screen">
-            <div class="card">
-                <h2>🔄 Recuperar laberinto</h2>
-                <p style="color: #aaa; margin-bottom: 15px;">Ingresa el código que te dio el generador:</p>
-                <input type="text" id="continue-code-input" class="lobby-input" placeholder="Ej: LAB-XYZ" maxlength="10">
-                <button class="btn" onclick="recoverMaze()">🔍 Buscar y Continuar</button>
-                <button class="btn btn-back" onclick="showScreen('creator-mode-screen')">← Volver</button>
             </div>
         </div>
 
