@@ -415,49 +415,60 @@ window.enterWaitingRoom = async () => {
 };
 
 
-        function setupWaitingRoom() {
-            document.querySelectorAll('#waiting-color-picker .color-btn').forEach(btn => {
-                btn.onclick = () => {
-                    document.querySelectorAll('#waiting-color-picker .color-btn').forEach(b => b.classList.remove('selected'));
-                    btn.classList.add('selected');
-                    myColor = btn.dataset.color;
-                    localStorage.setItem('ll_color', myColor);
-                    document.getElementById('color-status').textContent = "✅ ¡Color seleccionado!";
-                    document.getElementById('color-status').style.color = "#4CAF50";
-                    document.getElementById('btn-ready').disabled = false;
-                    updatePlayerData();
-                };
-                if (btn.dataset.color === myColor) btn.click();
-            });
-
-            onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
-                const data = snapshot.val();
-                if (!data) return;
-                players = data.players || {};
-                const maxP = data.maxPlayers || 1;
-                const list = document.getElementById('player-list');
-                list.innerHTML = '';
-                let readyCount = 0;
-                Object.entries(players).forEach(([pid, p]) => {
-                    if (p.ready) readyCount++;
-                    const div = document.createElement('div');
-                    div.className = `player-item ${p.ready ? 'ready' : 'not-ready'}`;
-                    div.innerHTML = `<span style="color:${p.color || '#fff'}">● Jugador</span> <span>${p.ready ? '✅ Listo' : '⏳ Esperando'}</span>`;
-                    list.appendChild(div);
-                });
-                document.getElementById('ready-status-text').textContent = `Jugadores listos: ${readyCount} / ${maxP}`;
-
-                // Mostrar botón de iniciar solo cuando todos están listos y es el host
-                const btnStartGame = document.getElementById('btn-start-game');
-                if (readyCount >= maxP && isHost) {
-                    btnStartGame.style.display = 'block';
-                } else {
-                    btnStartGame.style.display = 'none';
-                }
-            });
+function setupWaitingRoom() {
+    document.querySelectorAll('#waiting-color-picker .color-btn').forEach(btn => {
+        btn.onclick = () => {
+            document.querySelectorAll('#waiting-color-picker .color-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            myColor = btn.dataset.color;
+            localStorage.setItem('ll_color', myColor);
+            document.getElementById('color-status').textContent = "✅ ¡Color seleccionado!";
+            document.getElementById('color-status').style.color = "#4CAF50";
+            document.getElementById('btn-ready').disabled = false;
             updatePlayerData();
-            onDisconnect(ref(db, `rooms/${roomId}/players/${playerId}`)).remove();
+        };
+        if (btn.dataset.color === myColor) btn.click();
+    });
+
+    onValue(ref(db, `rooms/${roomId}`), (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+        
+        players = data.players || {};
+        const maxP = data.maxPlayers || 1;
+        const list = document.getElementById('player-list');
+        list.innerHTML = '';
+        let readyCount = 0;
+        
+        Object.entries(players).forEach(([pid, p]) => {
+            if (p.ready) readyCount++;
+            const div = document.createElement('div');
+            div.className = `player-item ${p.ready ? 'ready' : 'not-ready'}`;
+            div.innerHTML = `<span style="color:${p.color || '#fff'}">● Jugador</span> <span>${p.ready ? '✅ Listo' : '⏳ Esperando'}</span>`;
+            list.appendChild(div);
+        });
+        
+        document.getElementById('ready-status-text').textContent = `Jugadores listos: ${readyCount} / ${maxP}`;
+
+        // Mostrar botón de iniciar solo cuando todos están listos y es el host
+        const btnStartGame = document.getElementById('btn-start-game');
+        if (readyCount >= maxP && isHost) {
+            btnStartGame.style.display = 'block';
+        } else {
+            btnStartGame.style.display = 'none';
         }
+        
+        // 🚀 ¡ESTA ERA LA LÍNEA QUE FALTABA!
+        // Detecta cuando la base de datos cambia a gameStarted: true y lanza el juego
+        if (data.gameStarted && !gameStarted) {
+            start3DGame(data.mazeData, players);
+        }
+    });
+    
+    updatePlayerData();
+    onDisconnect(ref(db, `rooms/${roomId}/players/${playerId}`)).remove();
+}
+
 
         window.startGame = async () => {
             const data = (await get(ref(db, `rooms/${roomId}`))).val();
