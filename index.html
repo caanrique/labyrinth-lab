@@ -682,6 +682,97 @@
             });
         }
 
+        // 🔧 SISTEMA DE AUTO-REPARACIÓN DEL LABERINTO
+        // Detecta espacios vacíos aislados y rompe las paredes que los separan del camino principal
+        function fixClosedSpaces(grid, startPos, goalPos, size) {
+            if (!grid || grid.length === 0) return { fixed: false, wallsBroken: 0 };
+            
+            // Paso 1: BFS desde la posición de inicio para marcar todas las celdas alcanzables
+            const reachable = Array(size).fill(null).map(() => Array(size).fill(false));
+            const queue = [{x: startPos.x, y: startPos.y}];
+            reachable[startPos.y][startPos.x] = true;
+            
+            while (queue.length > 0) {
+                const {x, y} = queue.shift();
+                for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+                    const nx = x + dx, ny = y + dy;
+                    if (nx >= 0 && nx < size && ny >= 0 && ny < size 
+                        && !reachable[ny][nx] && grid[ny][nx] === 0) {
+                        reachable[ny][nx] = true;
+                        queue.push({x: nx, y: ny});
+                    }
+                }
+            }
+            
+            // Paso 2: Encontrar todas las celdas vacías NO alcanzables (islas aisladas)
+            const unreachable = [];
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    if (grid[y][x] === 0 && !reachable[y][x]) unreachable.push({x, y});
+                }
+            }
+            
+            if (unreachable.length === 0) return { fixed: false, wallsBroken: 0 };
+            
+            // Paso 3: Para cada isla aislada, encontrar la pared más cercana al camino principal y romperla
+            let wallsBroken = 0;
+            
+            for (const startCell of unreachable) {
+                if (reachable[startCell.y][startCell.x]) continue; // Ya fue conectada
+                
+                // BFS desde la isla para encontrar la pared más cercana al camino principal
+                const visited = Array(size).fill(null).map(() => Array(size).fill(false));
+                const bfsQueue = [startCell];
+                visited[startCell.y][startCell.x] = true;
+                let found = false;
+                
+                while (bfsQueue.length > 0 && !found) {
+                    const curr = bfsQueue.shift();
+                    
+                    for (const [dx, dy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+                        const nx = curr.x + dx, ny = curr.y + dy;
+                        if (nx < 0 || nx >= size || ny < 0 || ny >= size || visited[ny][nx]) continue;
+                        
+                        if (grid[ny][nx] === 1) {
+                            // Encontramos una pared. ¿Hay un camino alcanzable al otro lado?
+                            for (const [dx2, dy2] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+                                const nnx = nx + dx2, nny = ny + dy2;
+                                if (nnx >= 0 && nnx < size && nny >= 0 && nny < size && reachable[nny][nnx]) {
+                                    // ¡Sí! Rompemos esta pared
+                                    grid[ny][nx] = 0;
+                                    reachable[ny][nx] = true;
+                                    wallsBroken++;
+                                    found = true;
+                                    
+                                    // Marcar toda la isla como alcanzable
+                                    const newQueue = [{x: nx, y: ny}];
+                                    while (newQueue.length > 0) {
+                                        const c = newQueue.shift();
+                                        for (const [ddx, ddy] of [[0,1],[0,-1],[1,0],[-1,0]]) {
+                                            const mx = c.x + ddx, my = c.y + ddy;
+                                            if (mx >= 0 && mx < size && my >= 0 && my < size 
+                                                && !reachable[my][mx] && grid[my][mx] === 0) {
+                                                reachable[my][mx] = true;
+                                                newQueue.push({x: mx, y: my});
+                                            }
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                            if (found) break;
+                        } else {
+                            visited[ny][nx] = true;
+                            bfsQueue.push({x: nx, y: ny});
+                        }
+                    }
+                }
+            }
+            
+            return { fixed: wallsBroken > 0, wallsBroken };
+        }
+
+        
         window.toggleMap = () => {
             mapVisible = !mapVisible;
             document.getElementById('minimap').style.display = mapVisible ? 'block' : 'none';
