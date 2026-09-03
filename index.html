@@ -574,66 +574,148 @@
             return texture;
         }
 
-        window.generateRoomCode = () => { roomInput.value = "LAB-" + Math.random().toString(36).substr(2, 4).toUpperCase(); };
+        // ============================================================
+        // LÓGICA DE LOBBY: CREAR O UNIRSE
+        // ============================================================
         window.copyRoomCode = async () => {
-            if (!roomInput.value) { alert("Primero genera o escribe un código."); return; }
-            try { await navigator.clipboard.writeText(roomInput.value); const btn = document.getElementById('copy-btn'); btn.innerHTML = "✅"; setTimeout(() => { btn.innerHTML = "📋"; }, 2000); } 
-            catch (err) { roomInput.select(); document.execCommand('copy'); }
+            if (!roomId) { alert("Primero crea o únete a una sala."); return; }
+            try { 
+                await navigator.clipboard.writeText(roomId); 
+                alert("✅ Código copiado: " + roomId); 
+            } catch (err) { 
+                alert("Código: " + roomId); 
+            }
         };
 
-        const roomInput = document.getElementById('room-input');
-        const lobbyStatus = document.getElementById('lobby-status');
-
-        window.joinRoom = async () => {
+        // 1. FUNCIÓN PARA EL ANFITRIÓN (Crea la sala y va a elegir modo)
+        window.createRoom = async () => {
             initAudio();
             if (!db) { alert("Firebase no se inicializó."); return; }
+            
+            roomId = "LAB-" + Math.random().toString(36).substr(2, 4).toUpperCase();
+            const maxPlayers = parseInt(document.getElementById('player-count').value);
+            isHost = true;
+            
+            document.getElementById('lobby-status').textContent = "Creando sala...";
+            
             try {
-                roomId = roomInput.value.trim().toUpperCase();
-                if (!roomId) { alert("Ingresa un código de sala"); return; }
-                const maxPlayers = parseInt(document.getElementById('player-count').value);
-                lobbyStatus.textContent = "Conectando...";
-                document.getElementById('join-btn').disabled = true;
-                const roomRef = ref(db, `rooms/${roomId}`);
-                const snapshot = await get(roomRef);
-                
-                GRID_SIZE = 21; grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0)); goal = null; startPosition = null; CELL_PX = 20;
-                
-                if (!snapshot.exists()) {
-                    isHost = true;
-                    await set(roomRef, { host: playerId, maxPlayers: maxPlayers, battleRoyale: false, hostDesignReady: false, gridSize: GRID_SIZE, grid: grid, goal: null, startPosition: null, settings: { thickness: 1.0, height: 2.0, material: 'stone', floor: 'dirt', ambient: 1.0, playerLight: 5.0, lightDist: 50 }, gameStarted: false, players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: true, ready: false } } });
-                } else {
-                    // 🌟 CORRECCIÓN: Verificar si el jugador que vuelve es el mismo que creó la sala
-                    const existingData = snapshot.val();
-                    isHost = (existingData.host === playerId); 
+                GRID_SIZE = 21; grid = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0)); 
+                goal = null; startPosition = null; CELL_PX = 20;
 
-                    if (existingData.gridSize) { 
-                        GRID_SIZE = existingData.gridSize; 
-                        CELL_PX = Math.floor(420 / GRID_SIZE); 
-                    }
-                    
-                    await update(ref(db, `rooms/${roomId}/players/${playerId}`), { 
-                        color: myColor, 
-                        x: 0, z: 0, startX: 0, startZ: 0, 
-                        hasStick: isHost ? true : false, // Si es el host, mantiene el palo
-                        ready: false 
-                    });
-                    onDisconnect(ref(db, `rooms/${roomId}/players/${playerId}`)).remove();
-                }
-
+                await set(ref(db, `rooms/${roomId}`), { 
+                    host: playerId, 
+                    maxPlayers: maxPlayers, 
+                    battleRoyale: false, 
+                    hostDesignReady: false, 
+                    gridSize: GRID_SIZE, 
+                    grid: grid, 
+                    goal: null, 
+                    startPosition: null, 
+                    settings: { thickness: 1.0, height: 2.0, material: 'stone', floor: 'dirt', ambient: 1.0, playerLight: 5.0, lightDist: 50 }, 
+                    gameStarted: false, 
+                    players: { [playerId]: { color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: true, ready: false } } 
+                });
                 
-                document.getElementById('room-display-mode').textContent = `Sala: ${roomId} ${isHost ? '(Anfitrión)' : '(Invitado)'}`;
-                document.getElementById('room-display-waiting').textContent = `Sala: ${roomId}`;
-                document.getElementById('room-display-json').textContent = `Sala: ${roomId}`;
-                document.getElementById('room-display').textContent = `Sala: ${roomId} ${isHost ? '(Anfitrión)' : '(Invitado)'}`;
-                document.getElementById('room-display-settings').textContent = `Sala: ${roomId} ${isHost ? '(Anfitrión)' : '(Invitado)'}`;
-                document.getElementById('room-display-3d').textContent = `Sala: ${roomId}`;
+                // Actualizar textos de la interfaz
+                updateRoomTexts();
                 
+                // El anfitrión va a la pantalla de selección de modo
                 showScreen('mode-screen');
                 listenToRoom();
+                
+                // Mostrar modal o alerta con el código para compartir
+                setTimeout(() => {
+                    alert(`¡Sala creada!\n\nTu código es: ${roomId}\n\nCompártelo con tus amigos.`);
+                }, 500);
+
             } catch (error) {
                 console.error("❌ Error:", error);
                 alert("ERROR: " + error.message);
-                document.getElementById('join-btn').disabled = false;
+                document.getElementById('lobby-status').textContent = "";
+            }
+        };
+
+        // 2. FUNCIÓN PARA EL INVITADO (Busca la sala y va directo a configuración)
+        window.joinAsGuest = async () => {
+            initAudio();
+            if (!db) { alert("Firebase no se inicializó."); return; }
+            
+            const inputCode = document.getElementById('guest-room-input').value.trim().toUpperCase();
+            if (!inputCode) { alert("Por favor, ingresa un código de sala."); return; }
+            
+            roomId = inputCode;
+            isHost = false; // Forzamos que sea invitado
+            
+            document.getElementById('lobby-status').textContent = "Buscando sala...";
+            
+            try {
+                const roomRef = ref(db, `rooms/${roomId}`);
+                const snapshot = await get(roomRef);
+                
+                if (!snapshot.exists()) {
+                    alert("❌ Esa sala no existe. Verifica el código.");
+                    document.getElementById('lobby-status').textContent = "";
+                    return;
+                }
+                
+                const existingData = snapshot.val();
+                if (existingData.gridSize) { 
+                    GRID_SIZE = existingData.gridSize; 
+                    CELL_PX = Math.floor(420 / GRID_SIZE); 
+                }
+                
+                // Unir al jugador a la sala
+                await update(ref(db, `rooms/${roomId}/players/${playerId}`), { 
+                    color: myColor, x: 0, z: 0, startX: 0, startZ: 0, hasStick: false, ready: false 
+                });
+                onDisconnect(ref(db, `rooms/${roomId}/players/${playerId}`)).remove();
+                
+                updateRoomTexts();
+                
+                // 🌟 EL INVITADO SE SALTA LA SELECCIÓN DE MODO Y VA DIRECTO A CONFIGURACIÓN
+                showScreen('settings-screen');
+                setupGuestSettingsUI(); // Función nueva para preparar la pantalla del invitado
+                listenToRoom();
+
+            } catch (error) {
+                console.error("❌ Error:", error);
+                alert("ERROR: " + error.message);
+                document.getElementById('lobby-status').textContent = "";
+            }
+        };
+
+        function updateRoomTexts() {
+            const roleText = isHost ? '(Anfitrión 👑)' : '(Invitado 🎮)';
+            document.getElementById('room-display-mode').textContent = `Sala: ${roomId} ${roleText}`;
+            document.getElementById('room-display-waiting').textContent = `Sala: ${roomId}`;
+            document.getElementById('room-display-json').textContent = `Sala: ${roomId}`;
+            document.getElementById('room-display').textContent = `Sala: ${roomId} ${roleText}`;
+            document.getElementById('room-display-settings').textContent = `Sala: ${roomId} ${roleText}`;
+            document.getElementById('room-display-3d').textContent = `Sala: ${roomId}`;
+        }
+
+        // Función especial para configurar la pantalla del invitado
+        function setupGuestSettingsUI() {
+            // Ocultar cosas de anfitrión
+            document.querySelector('.battle-checkbox').style.display = 'none';
+            document.getElementById('btn-host-ready').style.display = 'none';
+            document.getElementById('btn-generate').style.display = 'none';
+            document.getElementById('settings-panel').style.display = 'none'; // El invitado no edita alturas
+            
+            // Mostrar cosas de invitado
+            document.getElementById('btn-guest-ready').style.display = 'block';
+            
+            // Resetear color
+            colorSelectedInRoom = false;
+            document.querySelectorAll('#game-color-picker .color-btn').forEach(b => b.classList.remove('selected'));
+            const statusEl = document.getElementById('color-selection-status');
+            statusEl.textContent = '⚠️ Selecciona tu color para entrar';
+            statusEl.style.color = '#ff6666';
+            
+            const savedColor = localStorage.getItem('ll_color');
+            if (savedColor) {
+                const savedBtn = document.querySelector(`#game-color-picker .color-btn[data-color="${savedColor}"]`);
+                if (savedBtn) savedBtn.click();
             }
         };
 
