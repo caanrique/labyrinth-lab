@@ -711,19 +711,8 @@ window.enterWaitingRoom = async () => {
         let scene, camera, renderer, playerAvatars = {}, joystick = null, gameCanvas;
 
         function start3DGame(mData, allPlayers) {
-            // 🔧 AUTO-REPARACIÓN: Conectar todo el laberinto antes de iniciar
-            const size = mData.gridSize || 21;
-            const startPos = mData.startPosition || {x: 1, y: 1};
-            const goalPos = mData.goal || {x: 19, y: 19};
-            
-            const repairResult = fixClosedSpaces(mData.grid, startPos, goalPos, size);
-            
-            if (repairResult.fixed) {
-                console.log(`🔧 Se rompieron ${repairResult.wallsBroken} paredes para conectar el laberinto`);
-                update(ref(db, `rooms/${roomId}/mazeData/grid`), mData.grid);
-            }
-            
             gameStarted = true;
+
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('game-container').style.display = 'block';
             document.getElementById('game-room-badge').textContent = `Sala: ${roomId}`;
