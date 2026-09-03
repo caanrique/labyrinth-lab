@@ -723,6 +723,16 @@ window.enterWaitingRoom = async () => {
             localPlayer.startX = localPlayer.x;
             localPlayer.startZ = localPlayer.z;
             localPlayer.hasStick = myData.hasStick || false;
+            // Listener de posiciones de jugadores (se ejecuta UNA sola vez, no 60 veces por segundo)
+            onValue(ref(db, `rooms/${roomId}/players`), (snapshot) => {
+                players = snapshot.val() || {};
+                Object.entries(players).forEach(([pid, p]) => {
+                    if (playerAvatars[pid]) {
+                        playerAvatars[pid].position.set(p.x !== undefined ? p.x : p.startX, 0, p.z !== undefined ? p.z : p.startZ);
+                    }
+                });
+            });
+
             initThreeJS(mData, allPlayers);
             animate();
         }
