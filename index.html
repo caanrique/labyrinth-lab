@@ -729,11 +729,31 @@ function setupWaitingRoom() {
             document.getElementById('game-room-badge').textContent = `Sala: ${roomId}`;
             
             const myData = allPlayers[playerId];
-            localPlayer.x = myData.startX !== undefined ? myData.startX + 0.5 : 1.5;
-            localPlayer.z = myData.startZ !== undefined ? myData.startZ + 0.5 : 1.5;
+            let startX = myData.startX !== undefined ? myData.startX : 1;
+            let startZ = myData.startZ !== undefined ? myData.startZ : 1;
+            const size = mData.gridSize || 21;
+            const grid = mData.grid;
+
+            // 🛡️ SEGURIDAD: Si la casilla de inicio es una pared (1), buscar la primera casilla vacía (0) disponible
+            if (grid[startZ] && grid[startZ][startX] === 1) {
+                let foundEmpty = false;
+                for (let z = 0; z < size && !foundEmpty; z++) {
+                    for (let x = 0; x < size && !foundEmpty; x++) {
+                        if (grid[z][x] === 0) {
+                            startX = x;
+                            startZ = z;
+                            foundEmpty = true;
+                        }
+                    }
+                }
+            }
+
+            localPlayer.x = startX + 0.5;
+            localPlayer.z = startZ + 0.5;
             localPlayer.startX = localPlayer.x;
             localPlayer.startZ = localPlayer.z;
             localPlayer.hasStick = myData.hasStick || false;
+
             // Listener de posiciones de jugadores (se ejecuta UNA sola vez, no 60 veces por segundo)
             onValue(ref(db, `rooms/${roomId}/players`), (snapshot) => {
                 players = snapshot.val() || {};
