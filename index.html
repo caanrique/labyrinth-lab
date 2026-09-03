@@ -92,25 +92,40 @@
         <p class="subtitle">Multijugador en tiempo real</p>
         
         <div id="lobby-screen" class="screen active">
-            <h2>🚪 Sala de Espera</h2>
-            <div class="input-group">
-                <input type="text" id="room-input" class="lobby-input" placeholder="Código (ej: LAB-123)" maxlength="10">
-                <button class="lobby-btn" onclick="copyRoomCode()" id="copy-btn" style="background: #0066ff; margin: 0; padding: 12px 15px;">📋</button>
+            <h2>🚪 Bienvenido a Labyrinth Lab</h2>
+            
+            <!-- SECCIÓN PARA EL ANFITRIÓN -->
+            <div style="background: rgba(76, 175, 80, 0.1); border: 1px solid #4CAF50; border-radius: 10px; padding: 20px; margin-bottom: 20px;">
+                <h3 style="color: #4CAF50; margin-bottom: 10px;">👑 ¿Eres el Anfitrión?</h3>
+                <p style="font-size: 14px; margin-bottom: 15px; color: #ccc;">Crea una sala, diseña el laberinto y comparte el código.</p>
+                
+                <div style="margin: 15px 0;">
+                    <label style="color: #aaa; font-size: 14px;">Jugadores máximos:</label><br>
+                    <select id="player-count" style="width: 100%; padding: 10px; font-size: 16px; background: #222; color: white; border: 1px solid #4CAF50; border-radius: 5px; margin-top: 5px;">
+                        <option value="1">1 jugador (prueba)</option>
+                        <option value="2" selected>2 jugadores</option>
+                        <option value="3">3 jugadores</option>
+                        <option value="4">4 jugadores</option>
+                        <option value="5">5 jugadores</option>
+                    </select>
+                </div>
+                <button class="lobby-btn" onclick="createRoom()" style="width: 100%; font-size: 18px; background: #4CAF50;">✨ Crear Nueva Sala</button>
             </div>
-            <div style="margin: 10px 0;"><button class="lobby-btn" onclick="generateRoomCode()">🎲 Generar Código</button></div>
-            <div style="margin: 15px 0;">
-                <label style="color: #aaa;">Número de jugadores:</label><br>
-                <select id="player-count" style="width: 80%; padding: 10px; font-size: 16px; background: #222; color: white; border: 2px solid #4CAF50; border-radius: 5px; margin-top: 5px;">
-                    <option value="1">1 jugador (prueba)</option>
-                    <option value="2" selected>2 jugadores</option>
-                    <option value="3">3 jugadores</option>
-                    <option value="4">4 jugadores</option>
-                    <option value="5">5 jugadores</option>
-                </select>
+
+            <!-- SECCIÓN PARA EL INVITADO -->
+            <div style="background: rgba(0, 102, 255, 0.1); border: 1px solid #0066ff; border-radius: 10px; padding: 20px;">
+                <h3 style="color: #0066ff; margin-bottom: 10px;">🎮 ¿Eres Invitado?</h3>
+                <p style="font-size: 14px; margin-bottom: 15px; color: #ccc;">Ingresa el código que te dio el anfitrión para unirte.</p>
+                
+                <div class="input-group" style="margin-bottom: 15px;">
+                    <input type="text" id="guest-room-input" class="lobby-input" placeholder="Código (ej: LAB-123)" maxlength="10" style="border-color: #0066ff;">
+                </div>
+                <button class="lobby-btn" onclick="joinAsGuest()" style="width: 100%; font-size: 18px; background: #0066ff;">🚀 Unirse a la Sala</button>
             </div>
-            <button class="lobby-btn" id="join-btn" onclick="joinRoom()" style="width: 80%; font-size: 18px; margin-top: 15px;">🎮 Unirse / Crear Sala</button>
-            <p id="lobby-status" style="margin-top: 15px; color: #4CAF50;"></p>
+            
+            <p id="lobby-status" style="margin-top: 15px; color: #ff9800; font-weight: bold; text-align: center;"></p>
         </div>
+
         
         <div id="mode-screen" class="screen">
             <div class="room-info-inline" id="room-display-mode">Sala: ---</div>
