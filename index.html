@@ -786,7 +786,7 @@ function setupWaitingRoom() {
 
             const size = mData.gridSize || 21;
             const grid = mData.grid;
-            const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(0.85, mData.settings.height || 2, 0.85), wallMat, size*size);
+            const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1, mData.settings.height || 2, 1), wallMat, size*size);
 
             const dummy = new THREE.Object3D();
             let idx = 0;
